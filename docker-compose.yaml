@@ -1,7 +1,6 @@
 services:
   bot:
-    build: .
-    container_name: 'remnawave-telegram-shop-bot'
+    image: ghcr.io/jolymmiles/remnawave-telegram-shop-bot:latest
     env_file:
       - .env
   db:
