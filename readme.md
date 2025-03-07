@@ -29,7 +29,7 @@ The application requires the following environment variables to be set:
 
 ### Telegram Bot
 - [Telegram Bot API](https://core.telegram.org/bots/api)
-- [Go Telegram Bot API](https://github.com/go-telegram-bot-api/telegram-bot-api)
+- [Go Telegram Bot API](https://github.com/go-telegram/bot)
 
 ### Database
 - [PostgreSQL](https://www.postgresql.org/)
