@@ -39,8 +39,6 @@ The application requires the following environment variables to be set:
 - [YooKassa API](https://yookassa.ru/developers/api)
 - [CryptoPay API](https://help.crypt.bot/crypto-pay-api)
 
-### Additional Services
-- [Remnawave API](https://remnawave.com/api) - External service integration
 
 ## Setup Instructions
 
