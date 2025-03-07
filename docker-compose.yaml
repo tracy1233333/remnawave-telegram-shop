@@ -1,0 +1,33 @@
+services:
+  bot:
+    build: .
+    container_name: 'remnawave-telegram-shop-bot'
+    env_file:
+      - .env
+  db:
+    image: postgres:17
+    container_name: 'remnawave-telegram-shop-db'
+    hostname: remnawave-telegram-shop-db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - TZ=UTC
+    ports:
+      - '5432:5432'
+    volumes:
+      - remnawave-telegram-shop-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}' ]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  remnawave-telegram-shop-db-data:
+    driver: local
+    external: false
+    name: remnawave-telegram-shop-db-data
