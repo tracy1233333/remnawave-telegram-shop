@@ -11,6 +11,7 @@ COPY ./cmd/app .
 
 COPY /internal ./internal
 COPY /db ./db
+COPY /translations ./translations
 
 RUN apk update && apk add --no-cache ca-certificates
 RUN update-ca-certificates
@@ -22,6 +23,8 @@ FROM scratch
 COPY --from=builder /bin/app /app/app
 
 COPY --from=builder /app/db /db
+
+COPY --from=builder /app/translations /translations
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 

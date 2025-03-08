@@ -24,10 +24,11 @@ type Customer struct {
 	ExpireAt         *time.Time `db:"expire_at"`
 	CreatedAt        time.Time  `db:"created_at"`
 	SubscriptionLink *string    `db:"subscription_link"`
+	Language         string     `db:"language"`
 }
 
 func (cr *CustomerRepository) FindById(ctx context.Context, id int64) (*Customer, error) {
-	buildSelect := sq.Select("id", "telegram_id", "expire_at", "created_at", "subscription_link").
+	buildSelect := sq.Select("id", "telegram_id", "expire_at", "created_at", "subscription_link", "language").
 		From("customer").
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar)
@@ -45,6 +46,7 @@ func (cr *CustomerRepository) FindById(ctx context.Context, id int64) (*Customer
 		&customer.ExpireAt,
 		&customer.CreatedAt,
 		&customer.SubscriptionLink,
+		&customer.Language,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -86,9 +88,9 @@ func (cr *CustomerRepository) FindByTelegramId(ctx context.Context, telegramId i
 
 func (cr *CustomerRepository) Create(ctx context.Context, customer *Customer) error {
 	buildInsert := sq.Insert("customer").
-		Columns("telegram_id", "expire_at").
+		Columns("telegram_id", "expire_at", "language").
 		PlaceholderFormat(sq.Dollar).
-		Values(customer.TelegramID, customer.ExpireAt)
+		Values(customer.TelegramID, customer.ExpireAt, customer.Language)
 
 	sql, arg, err := buildInsert.ToSql()
 	if err != nil {

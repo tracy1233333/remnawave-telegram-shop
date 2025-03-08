@@ -3,12 +3,14 @@ package handler
 import (
 	"context"
 	"fmt"
+	"github.com/biter777/countries"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"log/slog"
 	"remnawave-tg-shop-bot/internal/config"
 	"remnawave-tg-shop-bot/internal/cryptopay"
 	"remnawave-tg-shop-bot/internal/database"
+	"remnawave-tg-shop-bot/internal/translation"
 	"remnawave-tg-shop-bot/internal/yookasa"
 	"sort"
 	"strconv"
@@ -21,9 +23,11 @@ type Handler struct {
 	purchaseRepository *database.PurchaseRepository
 	cryptoPayClient    *cryptopay.Client
 	yookasaClient      *yookasa.Client
+	translation        *translation.Manager
 }
 
 func NewHandler(
+	translation *translation.Manager,
 	customerRepository *database.CustomerRepository,
 	purchaseRepository *database.PurchaseRepository,
 	cryptoPayClient *cryptopay.Client,
@@ -33,6 +37,7 @@ func NewHandler(
 		purchaseRepository: purchaseRepository,
 		cryptoPayClient:    cryptoPayClient,
 		yookasaClient:      yookasaClient,
+		translation:        translation,
 	}
 }
 
@@ -48,6 +53,7 @@ const (
 func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	ctxWithTime, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
+	langCode := update.Message.From.LanguageCode
 	existingCustomer, err := h.customerRepository.FindByTelegramId(ctx, update.Message.Chat.ID)
 	if err != nil {
 		slog.Error("error finding customer by telegram id", err)
@@ -56,9 +62,20 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 	if existingCustomer == nil {
 		err := h.customerRepository.Create(ctxWithTime, &database.Customer{
 			TelegramID: update.Message.Chat.ID,
+			Language:   langCode,
 		})
 		if err != nil {
 			slog.Error("error creating customer", err)
+			return
+		}
+	} else {
+		updates := map[string]interface{}{
+			"language": langCode,
+		}
+
+		err = h.customerRepository.UpdateFields(ctx, existingCustomer.ID, updates)
+		if err != nil {
+			slog.Error("Error updating customer", err)
 			return
 		}
 	}
@@ -67,21 +84,11 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 		ParseMode: models.ParseModeMarkdown,
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{{Text: "Купить", CallbackData: "buy"}},
-				{{Text: "Подключиться", CallbackData: "connect"}},
+				{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
+				{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
 			},
 		},
-		Text: fmt.Sprintf(`
-👋🏻 *Привет*
-Это бот для подключения к *VPN*🛡️
-
-Доступны локации:
-%s
-
-*Как подключиться:*
-• нажмите кнопку *"Подключиться"*
-• следуйте короткой инструкции`, bot.EscapeMarkdown(buildAvailableCountriesLists()),
-		),
+		Text: fmt.Sprintf(h.translation.GetText(langCode, "greeting"), bot.EscapeMarkdown(buildAvailableCountriesLists(langCode))),
 	},
 	)
 	if err != nil {
@@ -89,21 +96,30 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 	}
 }
 
-func buildAvailableCountriesLists() string {
+func buildAvailableCountriesLists(langCode string) string {
 	var locationsText strings.Builder
-	countries := config.Countries()
+	countriesMap := config.Countries()
 
-	keys := make([]string, 0, len(countries))
-	for k := range countries {
+	keys := make([]string, 0, len(countriesMap))
+	for k := range countriesMap {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
 	for i, k := range keys {
+		country := strings.Split(countriesMap[k], " ")
 		if i == len(keys)-1 {
-			locationsText.WriteString(fmt.Sprintf("└ %s\n", countries[k]))
+			if langCode == "ru" {
+				locationsText.WriteString(fmt.Sprintf("└ %s%s\n", country[0], countries.ByName(country[1]).StringRus()))
+			} else {
+				locationsText.WriteString(fmt.Sprintf("└ %s%s\n", country[0], countries.ByName(country[1]).String()))
+			}
 		} else {
-			locationsText.WriteString(fmt.Sprintf("├ %s\n", countries[k]))
+			if langCode == "ru" {
+				locationsText.WriteString(fmt.Sprintf("├ %s%s\n", country[0], countries.ByName(country[1]).StringRus()))
+			} else {
+				locationsText.WriteString(fmt.Sprintf("├ %s%s\n", country[0], countries.ByName(country[1]).String()))
+			}
 		}
 	}
 
@@ -112,26 +128,18 @@ func buildAvailableCountriesLists() string {
 
 func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
+	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
 	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{ChatID: callback.Chat.ID,
 		MessageID: callback.ID,
 		ParseMode: models.ParseModeMarkdown,
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{{Text: "Купить", CallbackData: "buy"}},
-				{{Text: "Подключиться", CallbackData: "connect"}},
+				{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
+				{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
 			},
 		},
-		Text: fmt.Sprintf(`
-👋🏻 *Привет*
-Это бот для подключения к *VPN*🛡️
-
-Доступны локации:
-%s
-
-*Как подключиться:*
-• нажмите кнопку *"Подключиться"*
-• следуйте короткой инструкции`, bot.EscapeMarkdown(buildAvailableCountriesLists()),
-		)})
+		Text: fmt.Sprintf(h.translation.GetText(langCode, "greeting"), bot.EscapeMarkdown(buildAvailableCountriesLists(langCode))),
+	})
 	if err != nil {
 		slog.Error("Error sending /start message", err)
 	}
@@ -139,6 +147,8 @@ func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 
 func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
+	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+
 	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
@@ -146,21 +156,16 @@ func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *mod
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: "1 месяц", CallbackData: buildSellCallbackData(1)},
-					{Text: "3 месяц", CallbackData: buildSellCallbackData(3)},
-					{Text: "6 месяц", CallbackData: buildSellCallbackData(6)},
+					{Text: h.translation.GetText(langCode, "month_1"), CallbackData: buildSellCallbackData(1)},
+					{Text: h.translation.GetText(langCode, "month_3"), CallbackData: buildSellCallbackData(3)},
+					{Text: h.translation.GetText(langCode, "month_6"), CallbackData: buildSellCallbackData(6)},
 				},
 				{
-					{Text: "Назад", CallbackData: CallbackStart},
+					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart},
 				},
 			},
 		},
-		Text: fmt.Sprintf(`
-📅 *1 мес*  %d₽
-📅 *3 мес*  %d₽
-📅 *6 мес*  %d₽
-
-К оплате принимаются карты российских банков и криптовалюта`,
+		Text: fmt.Sprintf(h.translation.GetText(langCode, "pricing_info"),
 			calculatePrice(1),
 			calculatePrice(2),
 			calculatePrice(3)),
@@ -173,18 +178,20 @@ func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *mod
 func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
 	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
+	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
 	month := callbackQuery["month"]
+
 	_, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: "₿ Криптовалютой", CallbackData: fmt.Sprintf("%s?month=%s", CallbackCrypto, month)},
-					{Text: "💳 Картой банка", CallbackData: fmt.Sprintf("%s?month=%s", CallbackCard, month)},
+					{Text: h.translation.GetText(langCode, "crypto_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCrypto, month)},
+					{Text: h.translation.GetText(langCode, "card_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCard, month)},
 				},
 				{
-					{Text: "Назад", CallbackData: CallbackBuy},
+					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},
 				},
 			},
 		},
@@ -257,14 +264,16 @@ func (h Handler) CryptoCallbackHandler(ctx context.Context, b *bot.Bot, update *
 		return
 	}
 
+	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+
 	_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: "Оплатить", URL: invoice.BotInvoiceUrl},
-					{Text: "Назад", CallbackData: buildSellCallbackData(month)},
+					{Text: h.translation.GetText(langCode, "pay_button"), URL: invoice.BotInvoiceUrl},
+					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: buildSellCallbackData(month)},
 				},
 			},
 		},
@@ -308,6 +317,7 @@ func (h Handler) YookasaCallbackHandler(ctx context.Context, b *bot.Bot, update 
 		slog.Error("Error creating purchase", err)
 		return
 	}
+	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
 
 	invoice, err := h.yookasaClient.CreateInvoice(ctx, price, month, customer.ID, purchaseId)
 	if err != nil {
@@ -333,8 +343,8 @@ func (h Handler) YookasaCallbackHandler(ctx context.Context, b *bot.Bot, update 
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: "Оплатить", URL: invoice.Confirmation.ConfirmationURL},
-					{Text: "Назад", CallbackData: buildSellCallbackData(month)},
+					{Text: h.translation.GetText(langCode, "pay_button"), URL: invoice.Confirmation.ConfirmationURL},
+					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: buildSellCallbackData(month)},
 				},
 			},
 		},
@@ -355,13 +365,15 @@ func (h Handler) ConnectCallbackHandler(ctx context.Context, b *bot.Bot, update 
 		slog.Error("customer not exist", "chatID", callback.Chat.ID, "error", err)
 	}
 
+	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+
 	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
-		Text:      buildConnectText(customer),
+		Text:      buildConnectText(customer, langCode),
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{{Text: "Назад", CallbackData: CallbackStart}},
+				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart}},
 			},
 		},
 	})
@@ -371,24 +383,31 @@ func (h Handler) ConnectCallbackHandler(ctx context.Context, b *bot.Bot, update 
 	}
 }
 
-func buildConnectText(customer *database.Customer) string {
+func buildConnectText(customer *database.Customer, langCode string) string {
 	var info strings.Builder
+
+	tm := translation.GetInstance()
 
 	if customer.ExpireAt != nil {
 		currentTime := time.Now()
 
 		if currentTime.Before(*customer.ExpireAt) {
 			formattedDate := customer.ExpireAt.Format("02.01.2006 15:04")
-			info.WriteString(fmt.Sprintf("Ваша подписка действует до: %s", formattedDate))
+
+			subscriptionActiveText := tm.GetText(langCode, "subscription_active")
+			info.WriteString(fmt.Sprintf(subscriptionActiveText, formattedDate))
 
 			if customer.SubscriptionLink != nil && *customer.SubscriptionLink != "" {
-				info.WriteString(fmt.Sprintf("\n\nСсылка на подписку: %s", *customer.SubscriptionLink))
+				subscriptionLinkText := tm.GetText(langCode, "subscription_link")
+				info.WriteString(fmt.Sprintf(subscriptionLinkText, *customer.SubscriptionLink))
 			}
 		} else {
-			info.WriteString("У вас нет активной подписки")
+			noSubscriptionText := tm.GetText(langCode, "no_subscription")
+			info.WriteString(noSubscriptionText)
 		}
 	} else {
-		info.WriteString("У вас нет активной подписки")
+		noSubscriptionText := tm.GetText(langCode, "no_subscription")
+		info.WriteString(noSubscriptionText)
 	}
 
 	return info.String()

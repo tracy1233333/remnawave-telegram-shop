@@ -7,6 +7,7 @@ import (
 	"github.com/go-telegram/bot/models"
 	"remnawave-tg-shop-bot/internal/database"
 	"remnawave-tg-shop-bot/internal/remnawave"
+	"remnawave-tg-shop-bot/internal/translation"
 	"time"
 )
 
@@ -15,9 +16,11 @@ type PaymentService struct {
 	remnawaveClient    *remnawave.Client
 	customerRepository *database.CustomerRepository
 	telegramBot        *bot.Bot
+	translation        *translation.Manager
 }
 
 func NewPaymentService(
+	translation *translation.Manager,
 	purchaseRepository *database.PurchaseRepository,
 	remnawaveClient *remnawave.Client,
 	customerRepository *database.CustomerRepository,
@@ -27,6 +30,7 @@ func NewPaymentService(
 		remnawaveClient:    remnawaveClient,
 		customerRepository: customerRepository,
 		telegramBot:        telegramBot,
+		translation:        translation,
 	}
 }
 
@@ -73,11 +77,11 @@ func (s PaymentService) ProcessPurchaseById(purchaseId int64) error {
 
 	_, err = s.telegramBot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: customer.TelegramID,
-		Text:   "Ваша подписка активирована!",
+		Text:   s.translation.GetText(customer.Language, "subscription_activated"),
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: "🔗 Подключиться", URL: user.SubscriptionURL},
+					{Text: s.translation.GetText(customer.Language, "connect_button"), URL: user.SubscriptionURL},
 				},
 			},
 		},

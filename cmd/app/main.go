@@ -17,6 +17,7 @@ import (
 	"remnawave-tg-shop-bot/internal/handler"
 	"remnawave-tg-shop-bot/internal/payment"
 	"remnawave-tg-shop-bot/internal/remnawave"
+	"remnawave-tg-shop-bot/internal/translation"
 	"remnawave-tg-shop-bot/internal/yookasa"
 	"strconv"
 	"strings"
@@ -27,6 +28,12 @@ func main() {
 	defer cancel()
 
 	config.InitConfig()
+
+	tm := translation.GetInstance()
+	err := tm.InitTranslations("./translations")
+	if err != nil {
+		panic(err)
+	}
 
 	pool, err := initDatabase(ctx, config.DadaBaseUrl())
 	if err != nil {
@@ -45,18 +52,18 @@ func main() {
 	remnawaveClient := remnawave.NewClient(config.RemnawaveUrl(), config.RemnawaveToken())
 	initCountries(ctx, remnawaveClient)
 	yookasaClient := yookasa.NewClient(config.YookasaUrl(), config.YookasaShopId(), config.YookasaSecretKey())
-	b, err := bot.New(config.TelegramToken())
+	b, err := bot.New(config.TelegramToken(), bot.WithWorkers(3))
 	if err != nil {
 		panic(err)
 	}
 
-	paymentService := payment.NewPaymentService(purchaseRepository, remnawaveClient, customerRepository, b)
+	paymentService := payment.NewPaymentService(tm, purchaseRepository, remnawaveClient, customerRepository, b)
 
 	cronScheduler := setupInvoiceChecker(purchaseRepository, cryptoPayClient, paymentService, yookasaClient)
 	cronScheduler.Start()
 	defer cronScheduler.Stop()
 
-	h := handler.NewHandler(customerRepository, purchaseRepository, cryptoPayClient, yookasaClient)
+	h := handler.NewHandler(tm, customerRepository, purchaseRepository, cryptoPayClient, yookasaClient)
 
 	me, err := b.GetMe(ctx)
 	if err != nil {
@@ -89,7 +96,7 @@ func initCountries(ctx context.Context, remnawaveClient *remnawave.Client) {
 	for _, node := range *nodes {
 		if !node.IsDisabled && node.IsNodeOnline {
 			country := countries.ByName(node.CountryCode)
-			countryText := fmt.Sprintf("%s %s", country.Emoji(), country.StringRus())
+			countryText := fmt.Sprintf("%s %s", country.Emoji(), node.CountryCode)
 			uniqueCountries[node.CountryCode] = countryText
 		}
 	}
