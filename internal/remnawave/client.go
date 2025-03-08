@@ -54,9 +54,10 @@ func (r *Client) updateUser(ctx context.Context, existingUser *User, days int) (
 	newExpire := getNewExpire(days, existingUser)
 
 	userUpdate := &UserUpdate{
-		UUID:     existingUser.UUID,
-		ExpireAt: newExpire,
-		Status:   ACTIVE,
+		UUID:              existingUser.UUID,
+		ExpireAt:          newExpire,
+		Status:            ACTIVE,
+		TrafficLimitBytes: config.TrafficLimit(),
 	}
 
 	jsonData, err := json.Marshal(userUpdate)
@@ -119,6 +120,7 @@ func (r *Client) createUser(ctx context.Context, username string, month int) (*U
 		TrafficLimitStrategy: MONTH,
 		SubscriptionUuid:     nil,
 		ExpireAt:             expireAt,
+		TrafficLimitBytes:    config.TrafficLimit(),
 	}
 
 	jsonData, err := json.Marshal(userCreate)

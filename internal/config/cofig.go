@@ -21,6 +21,7 @@ type config struct {
 	yookasaSecretKey string
 	yookasaEmail     string
 	countries        map[string]string
+	trafficLimit     int64
 }
 
 var conf config
@@ -71,6 +72,11 @@ func SetCountries(countries map[string]string) {
 func Countries() map[string]string {
 	return conf.countries
 }
+func TrafficLimit() int64 {
+	return conf.trafficLimit * bytesInGigabyte
+}
+
+const bytesInGigabyte = 1073741824
 
 func InitConfig() {
 	err := godotenv.Load(".env")
@@ -136,4 +142,15 @@ func InitConfig() {
 	if conf.yookasaEmail == "" {
 		panic("YOOKASA_EMAIL .env variable not set")
 	}
+
+	strLimit := os.Getenv("TRAFFIC_LIMIT")
+	if strLimit == "" {
+		panic("TRAFFIC_LIMIT .env variable not set")
+	}
+	limit, err := strconv.Atoi(strLimit)
+	if err != nil {
+		panic(err)
+	}
+	conf.trafficLimit = int64(limit)
+
 }

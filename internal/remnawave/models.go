@@ -23,11 +23,11 @@ type Node struct {
 	UsersOnline             int               `json:"usersOnline"`
 	CpuCount                *int              `json:"cpuCount"`
 	CpuModel                *string           `json:"cpuModel"`
-	TotalRam                *int64            `json:"totalRam"`
+	TotalRam                *string           `json:"totalRam"`
 	ConsumptionMultiplier   float64           `json:"consumptionMultiplier"`
-	TrafficLimitBytes       int64             `json:"trafficLimitBytes"`
-	TrafficUsedBytes        int64             `json:"trafficUsedBytes"`
-	NotifyPercent           int               `json:"notifyPercent"`
+	TrafficLimitBytes       *int64            `json:"trafficLimitBytes"`
+	TrafficUsedBytes        *int64            `json:"trafficUsedBytes"`
+	NotifyPercent           *int              `json:"notifyPercent"`
 	ViewPosition            int               `json:"viewPosition"`
 	CountryCode             string            `json:"countryCode"`
 	CreatedAt               time.Time         `json:"createdAt"`
