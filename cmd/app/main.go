@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/biter777/countries"
 	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/robfig/cron/v3"
 	"log"
@@ -70,9 +71,34 @@ func main() {
 		panic(err)
 	}
 
+	_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+		Commands: []models.BotCommand{
+			{Command: "start", Description: "Начать работу с ботом"},
+			{Command: "connect", Description: "Подключиться к VPN"},
+		},
+		LanguageCode: "ru",
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+		Commands: []models.BotCommand{
+			{Command: "start", Description: "Start using the bot"},
+			{Command: "connect", Description: "Connect to VPN"},
+		},
+		LanguageCode: "en",
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
 	config.SetBotURL(fmt.Sprintf("https://t.me/%s", me.Username))
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, h.StartCommandHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/connect", bot.MatchTypeExact, h.ConnectCommandHandler)
 
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackBuy, bot.MatchTypeExact, h.BuyCallbackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackStart, bot.MatchTypeExact, h.StartCallbackHandler)

@@ -354,6 +354,32 @@ func (h Handler) YookasaCallbackHandler(ctx context.Context, b *bot.Bot, update 
 	}
 }
 
+func (h Handler) ConnectCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	customer, err := h.customerRepository.FindByTelegramId(ctx, update.Message.Chat.ID)
+	if err != nil {
+		slog.Error("Error finding customer", err)
+	}
+	if customer == nil {
+		slog.Error("customer not exist", "chatID", update.Message.Chat.ID, "error", err)
+	}
+
+	langCode := update.Message.From.LanguageCode
+
+	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   buildConnectText(customer, langCode),
+		ReplyMarkup: models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart}},
+			},
+		},
+	})
+
+	if err != nil {
+		slog.Error("Error sending connect message", err)
+	}
+}
+
 func (h Handler) ConnectCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
 
