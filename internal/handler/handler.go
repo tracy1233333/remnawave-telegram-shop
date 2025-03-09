@@ -155,7 +155,7 @@ func buildAvailableCountriesLists(langCode string) string {
 
 func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
-	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+	langCode := update.CallbackQuery.From.LanguageCode
 	inlineKeyboard := [][]models.InlineKeyboardButton{
 		{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
 		{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
@@ -200,7 +200,7 @@ func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 
 func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
-	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+	langCode := update.CallbackQuery.From.LanguageCode
 
 	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    callback.Chat.ID,
@@ -231,7 +231,7 @@ func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *mod
 func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
 	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
-	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+	langCode := update.CallbackQuery.From.LanguageCode
 	month := callbackQuery["month"]
 
 	_, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
@@ -317,7 +317,7 @@ func (h Handler) CryptoCallbackHandler(ctx context.Context, b *bot.Bot, update *
 		return
 	}
 
-	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+	langCode := update.CallbackQuery.From.LanguageCode
 
 	_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
 		ChatID:    callback.Chat.ID,
@@ -370,7 +370,7 @@ func (h Handler) YookasaCallbackHandler(ctx context.Context, b *bot.Bot, update 
 		slog.Error("Error creating purchase", err)
 		return
 	}
-	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+	langCode := update.CallbackQuery.From.LanguageCode
 
 	invoice, err := h.yookasaClient.CreateInvoice(ctx, price, month, customer.ID, purchaseId)
 	if err != nil {
@@ -444,7 +444,7 @@ func (h Handler) ConnectCallbackHandler(ctx context.Context, b *bot.Bot, update 
 		slog.Error("customer not exist", "chatID", callback.Chat.ID, "error", err)
 	}
 
-	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+	langCode := update.CallbackQuery.From.LanguageCode
 
 	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    callback.Chat.ID,
