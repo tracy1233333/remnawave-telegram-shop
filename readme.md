@@ -4,6 +4,14 @@
 
 A Telegram bot for selling subscriptions with integration to Remnawave (https://remna.st/). This service allows users to purchase and manage subscriptions through Telegram with multiple payment system options.
 
+## Features
+
+- Purchase VPN subscriptions with different payment methods (bank cards, cryptocurrency)
+- Multiple subscription plans (1, 3, and 6 months)
+- Automated subscription management
+- **Subscription Notifications**: The bot automatically sends notifications to users 3 days before their subscription expires, helping them avoid service interruption
+- Multi-language support (Russian and English)
+
 ## Environment Variables
 
 The application requires the following environment variables to be set:
@@ -35,6 +43,13 @@ The application requires the following environment variables to be set:
 The bot dynamically creates buttons based on available environment variables:
 - Main buttons for purchasing and connecting to the VPN are always shown
 - Additional buttons for Server Status, Support, Feedback, and Channel are only displayed if their corresponding URL environment variables are set
+
+## Automated Notifications
+
+The bot includes a notification system that runs daily at 16:00 UTC to check for expiring subscriptions:
+- Users receive a notification 3 days before their subscription expires
+- The notification includes the exact expiration date and a convenient button to renew the subscription
+- Notifications are sent in the user's preferred language
 
 ## Plugins and Dependencies
 
