@@ -25,6 +25,16 @@ The application requires the following environment variables to be set:
 | `YOOKASA_URL` | YooKassa API URL                                   |
 | `YOOKASA_EMAIL` | Email address associated with YooKassa account     |
 | `TRAFFIC_LIMIT` | Maximum allowed traffic in gb (0 to set unlimited) |
+| `SERVER_STATUS_URL` | URL to server status page (optional) - if not set, button will not be displayed |
+| `SUPPORT_URL` | URL to support chat or page (optional) - if not set, button will not be displayed |
+| `FEEDBACK_URL` | URL to feedback/reviews page (optional) - if not set, button will not be displayed |
+| `CHANNEL_URL` | URL to Telegram channel (optional) - if not set, button will not be displayed |
+
+## User Interface
+
+The bot dynamically creates buttons based on available environment variables:
+- Main buttons for purchasing and connecting to the VPN are always shown
+- Additional buttons for Server Status, Support, Feedback, and Channel are only displayed if their corresponding URL environment variables are set
 
 ## Plugins and Dependencies
 
@@ -48,5 +58,17 @@ The application requires the following environment variables to be set:
 3. Run the application:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
+
+## Update Instructions
+
+1. Pull the latest Docker image:
+   ```bash
+   docker compose pull
+   ```
+
+2. Restart the containers:
+   ```bash
+   docker compose down && docker compose up -d
+   ```

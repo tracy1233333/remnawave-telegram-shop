@@ -80,17 +80,43 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 		}
 	}
 
-	_, err = b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID,
+	inlineKeyboard := [][]models.InlineKeyboardButton{
+		{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
+		{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
+	}
+
+	if config.ServerStatusURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "server_status_button"), URL: config.ServerStatusURL()},
+		})
+	}
+
+	if config.SupportURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "support_button"), URL: config.SupportURL()},
+		})
+	}
+
+	if config.FeedbackURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "feedback_button"), URL: config.FeedbackURL()},
+		})
+	}
+
+	if config.ChannelURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "channel_button"), URL: config.ChannelURL()},
+		})
+	}
+
+	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:    update.Message.Chat.ID,
 		ParseMode: models.ParseModeMarkdown,
 		ReplyMarkup: models.InlineKeyboardMarkup{
-			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
-				{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
-			},
+			InlineKeyboard: inlineKeyboard,
 		},
 		Text: fmt.Sprintf(h.translation.GetText(langCode, "greeting"), bot.EscapeMarkdown(buildAvailableCountriesLists(langCode))),
-	},
-	)
+	})
 	if err != nil {
 		slog.Error("Error sending /start message", err)
 	}
@@ -129,14 +155,40 @@ func buildAvailableCountriesLists(langCode string) string {
 func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
 	langCode := update.CallbackQuery.Message.Message.From.LanguageCode
+	inlineKeyboard := [][]models.InlineKeyboardButton{
+		{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
+		{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
+	}
+
+	if config.ServerStatusURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "server_status_button"), URL: config.ServerStatusURL()},
+		})
+	}
+
+	if config.SupportURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "support_button"), URL: config.SupportURL()},
+		})
+	}
+
+	if config.FeedbackURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "feedback_button"), URL: config.FeedbackURL()},
+		})
+	}
+
+	if config.ChannelURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "channel_button"), URL: config.ChannelURL()},
+		})
+	}
+
 	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{ChatID: callback.Chat.ID,
 		MessageID: callback.ID,
 		ParseMode: models.ParseModeMarkdown,
 		ReplyMarkup: models.InlineKeyboardMarkup{
-			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
-				{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
-			},
+			InlineKeyboard: inlineKeyboard,
 		},
 		Text: fmt.Sprintf(h.translation.GetText(langCode, "greeting"), bot.EscapeMarkdown(buildAvailableCountriesLists(langCode))),
 	})

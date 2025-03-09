@@ -22,9 +22,29 @@ type config struct {
 	yookasaEmail     string
 	countries        map[string]string
 	trafficLimit     int64
+	feedbackURL      string
+	channelURL       string
+	serverStatusURL  string
+	supportURL       string
 }
 
 var conf config
+
+func FeedbackURL() string {
+	return conf.feedbackURL
+}
+
+func ChannelURL() string {
+	return conf.channelURL
+}
+
+func ServerStatusURL() string {
+	return conf.serverStatusURL
+}
+
+func SupportURL() string {
+	return conf.supportURL
+}
 
 func YookasaEmail() string {
 	return conf.yookasaEmail
@@ -152,5 +172,10 @@ func InitConfig() {
 		panic(err)
 	}
 	conf.trafficLimit = int64(limit)
+
+	conf.serverStatusURL = os.Getenv("SERVER_STATUS_URL")
+	conf.supportURL = os.Getenv("SUPPORT_URL")
+	conf.feedbackURL = os.Getenv("FEEDBACK_URL")
+	conf.channelURL = os.Getenv("CHANNEL_URL")
 
 }
