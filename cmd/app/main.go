@@ -16,6 +16,7 @@ import (
 	"remnawave-tg-shop-bot/internal/cryptopay"
 	"remnawave-tg-shop-bot/internal/database"
 	"remnawave-tg-shop-bot/internal/handler"
+	"remnawave-tg-shop-bot/internal/notification"
 	"remnawave-tg-shop-bot/internal/payment"
 	"remnawave-tg-shop-bot/internal/remnawave"
 	"remnawave-tg-shop-bot/internal/translation"
@@ -64,6 +65,12 @@ func main() {
 	cronScheduler.Start()
 	defer cronScheduler.Stop()
 
+	subService := notification.NewSubscriptionService(customerRepository, b, tm)
+
+	subscriptionNotificationCronScheduler := setupSubscriptionNotifier(subService)
+	subscriptionNotificationCronScheduler.Start()
+	defer subscriptionNotificationCronScheduler.Stop()
+
 	h := handler.NewHandler(tm, customerRepository, purchaseRepository, cryptoPayClient, yookasaClient)
 
 	me, err := b.GetMe(ctx)
@@ -109,6 +116,24 @@ func main() {
 
 	slog.Info("Bot is starting...")
 	b.Start(ctx)
+}
+
+func setupSubscriptionNotifier(subService *notification.SubscriptionService) *cron.Cron {
+	c := cron.New()
+
+	_, err := c.AddFunc("0 16 * * *", func() {
+		slog.Info("Running subscription notification check")
+
+		err := subService.SendSubscriptionNotifications(context.Background())
+		if err != nil {
+			slog.Error("Error sending subscription notifications", "error", err)
+		}
+	})
+
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func initCountries(ctx context.Context, remnawaveClient *remnawave.Client) {
@@ -157,7 +182,7 @@ func setupInvoiceChecker(
 	})
 
 	if err != nil {
-		log.Fatalf("Failed to schedule invoice checker: %v", err)
+		panic(err)
 	}
 
 	return c
