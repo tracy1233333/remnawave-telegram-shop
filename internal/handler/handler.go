@@ -68,6 +68,7 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 			slog.Error("error creating customer", err)
 			return
 		}
+		slog.Info("user created", "telegramId", update.Message.Chat.ID)
 	} else {
 		updates := map[string]interface{}{
 			"language": langCode,
