@@ -1,8 +1,13 @@
 services:
   bot:
+#    build: .
     image: ghcr.io/jolymmiles/remnawave-telegram-shop-bot:latest
     env_file:
       - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:17
     container_name: 'remnawave-telegram-shop-db'
