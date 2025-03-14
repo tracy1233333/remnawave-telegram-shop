@@ -239,22 +239,35 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 	langCode := update.CallbackQuery.From.LanguageCode
 	month := callbackQuery["month"]
 
+	var keyboard [][]models.InlineKeyboardButton
+
+	if config.IsCryptoPayEnabled() {
+		keyboard = append(keyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "crypto_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCrypto, month)},
+		})
+	}
+
+	if config.IsYookasaEnabled() {
+		keyboard = append(keyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "card_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCard, month)},
+		})
+	}
+
+	if config.IsTelegramStarsEnabled() {
+		keyboard = append(keyboard, []models.InlineKeyboardButton{
+			{Text: "⭐Telegram Stars", CallbackData: fmt.Sprintf("%s?month=%s", CallbackTelegramStars, month)},
+		})
+	}
+
+	keyboard = append(keyboard, []models.InlineKeyboardButton{
+		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart},
+	})
+
 	_, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
 		ReplyMarkup: models.InlineKeyboardMarkup{
-			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{
-					{Text: h.translation.GetText(langCode, "crypto_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCrypto, month)},
-					{Text: h.translation.GetText(langCode, "card_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCard, month)},
-				},
-				{
-					{Text: "⭐Telegram Stars", CallbackData: fmt.Sprintf("%s?month=%s", CallbackTelegramStars, month)},
-				},
-				{
-					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},
-				},
-			},
+			InlineKeyboard: keyboard,
 		},
 	})
 

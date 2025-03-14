@@ -8,24 +8,27 @@ import (
 )
 
 type config struct {
-	telegramToken    string
-	price            int
-	remnawaveUrl     string
-	remnawaveToken   string
-	databaseURL      string
-	cryptoPayURL     string
-	cryptoPayToken   string
-	botURL           string
-	yookasaURL       string
-	yookasaShopId    string
-	yookasaSecretKey string
-	yookasaEmail     string
-	countries        map[string]string
-	trafficLimit     int64
-	feedbackURL      string
-	channelURL       string
-	serverStatusURL  string
-	supportURL       string
+	telegramToken          string
+	price                  int
+	remnawaveUrl           string
+	remnawaveToken         string
+	databaseURL            string
+	cryptoPayURL           string
+	cryptoPayToken         string
+	botURL                 string
+	yookasaURL             string
+	yookasaShopId          string
+	yookasaSecretKey       string
+	yookasaEmail           string
+	countries              map[string]string
+	trafficLimit           int64
+	feedbackURL            string
+	channelURL             string
+	serverStatusURL        string
+	supportURL             string
+	isYookasaEnabled       bool
+	isCryptoEnabled        bool
+	isTelegramStarsEnabled bool
 }
 
 var conf config
@@ -96,6 +99,18 @@ func TrafficLimit() int64 {
 	return conf.trafficLimit * bytesInGigabyte
 }
 
+func IsCryptoPayEnabled() bool {
+	return conf.isTelegramStarsEnabled
+}
+
+func IsYookasaEnabled() bool {
+	return conf.isYookasaEnabled
+}
+
+func IsTelegramStarsEnabled() bool {
+	return conf.isTelegramStarsEnabled
+}
+
 const bytesInGigabyte = 1073741824
 
 func InitConfig() {
@@ -134,33 +149,34 @@ func InitConfig() {
 		panic("DADA_BASE_URL .env variable not set")
 	}
 
-	conf.cryptoPayURL = os.Getenv("CRYPTO_PAY_URL")
-	if conf.cryptoPayURL == "" {
-		panic("CRYPTO_PAY_URL .env variable not set")
-	}
-	conf.cryptoPayToken = os.Getenv("CRYPTO_PAY_TOKEN")
-	if conf.cryptoPayToken == "" {
-		panic("CRYPTO_PAY_TOKEN .env variable not set")
+	conf.isTelegramStarsEnabled = os.Getenv("TELEGRAM_STARS_ENABLED") == "true"
+
+	conf.isCryptoEnabled = os.Getenv("CRYPTO_PAY_ENABLED") == "true"
+	if conf.isCryptoEnabled {
+		conf.cryptoPayURL = os.Getenv("CRYPTO_PAY_URL")
+		if conf.cryptoPayURL == "" {
+			panic("CRYPTO_PAY_URL .env variable not set")
+		}
+		conf.cryptoPayToken = os.Getenv("CRYPTO_PAY_TOKEN")
+		if conf.cryptoPayToken == "" {
+			panic("CRYPTO_PAY_TOKEN .env variable not set")
+		}
 	}
 
-	conf.yookasaURL = os.Getenv("YOOKASA_URL")
-	if conf.yookasaURL == "" {
-		panic("YOOKASA_URL .env variable not set")
-	}
+	conf.isYookasaEnabled = os.Getenv("YOOKASA_ENABLED") == "true"
+	if !conf.isYookasaEnabled {
+		conf.yookasaURL = os.Getenv("YOOKASA_URL")
+		conf.yookasaShopId = os.Getenv("YOOKASA_SHOP_ID")
+		conf.yookasaSecretKey = os.Getenv("YOOKASA_SECRET_KEY")
 
-	conf.yookasaShopId = os.Getenv("YOOKASA_SHOP_ID")
-	if conf.yookasaShopId == "" {
-		panic("YOOKASA_SHOP_ID .env variable not set")
-	}
+		if conf.yookasaURL == "" || conf.yookasaShopId == "" || conf.yookasaSecretKey == "" {
+			panic("YOOKASA_URL, YOOKASA_SHOP_ID, YOOKASA_SECRET_KEY .env variables not set")
+		}
 
-	conf.yookasaSecretKey = os.Getenv("YOOKASA_SECRET_KEY")
-	if conf.yookasaSecretKey == "" {
-		panic("YOOKASA_SECRET_KEY .env variable not set")
-	}
-
-	conf.yookasaEmail = os.Getenv("YOOKASA_EMAIL")
-	if conf.yookasaEmail == "" {
-		panic("YOOKASA_EMAIL .env variable not set")
+		conf.yookasaEmail = os.Getenv("YOOKASA_EMAIL")
+		if conf.yookasaEmail == "" {
+			panic("YOOKASA_EMAIL .env variable not set")
+		}
 	}
 
 	strLimit := os.Getenv("TRAFFIC_LIMIT")

@@ -182,16 +182,31 @@ func setupInvoiceChecker(
 	cryptoPayClient *cryptopay.Client,
 	paymentService *payment.PaymentService,
 	yookasaClient *yookasa.Client) *cron.Cron {
+	if !config.IsYookasaEnabled() && !config.IsCryptoPayEnabled() {
+		return nil
+	}
 	c := cron.New(cron.WithSeconds())
 
-	_, err := c.AddFunc("*/5 * * * * *", func() {
-		ctx := context.Background()
-		checkCryptoPayInvoice(ctx, purchaseRepository, cryptoPayClient, paymentService)
-		checkYookasaInvoice(ctx, purchaseRepository, yookasaClient, paymentService)
-	})
+	if config.IsCryptoPayEnabled() {
+		_, err := c.AddFunc("*/5 * * * * *", func() {
+			ctx := context.Background()
+			checkCryptoPayInvoice(ctx, purchaseRepository, cryptoPayClient, paymentService)
+		})
 
-	if err != nil {
-		panic(err)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if config.IsYookasaEnabled() {
+		_, err := c.AddFunc("*/5 * * * * *", func() {
+			ctx := context.Background()
+			checkYookasaInvoice(ctx, purchaseRepository, yookasaClient, paymentService)
+		})
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return c
