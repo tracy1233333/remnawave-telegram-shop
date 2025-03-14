@@ -14,8 +14,9 @@ import (
 type InvoiceType string
 
 const (
-	InvoiceTypeCrypto  InvoiceType = "crypto"
-	InvoiceTypeYookasa InvoiceType = "yookasa"
+	InvoiceTypeCrypto   InvoiceType = "crypto"
+	InvoiceTypeYookasa  InvoiceType = "yookasa"
+	InvoiceTypeTelegram InvoiceType = "telegram"
 )
 
 type PurchaseStatus string

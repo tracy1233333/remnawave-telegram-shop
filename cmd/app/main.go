@@ -71,7 +71,7 @@ func main() {
 	subscriptionNotificationCronScheduler.Start()
 	defer subscriptionNotificationCronScheduler.Stop()
 
-	h := handler.NewHandler(tm, customerRepository, purchaseRepository, cryptoPayClient, yookasaClient)
+	h := handler.NewHandler(paymentService, tm, customerRepository, purchaseRepository, cryptoPayClient, yookasaClient)
 
 	me, err := b.GetMe(ctx)
 	if err != nil {
@@ -113,6 +113,15 @@ func main() {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackCrypto, bot.MatchTypePrefix, h.CryptoCallbackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackConnect, bot.MatchTypeExact, h.ConnectCallbackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackCard, bot.MatchTypePrefix, h.YookasaCallbackHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackTelegramStars, bot.MatchTypePrefix, h.TelegramStarsCallbackHandler)
+
+	b.RegisterHandlerMatchFunc(func(update *models.Update) bool {
+		return update.PreCheckoutQuery != nil
+	}, h.PreCheckoutCallbackHandler)
+
+	b.RegisterHandlerMatchFunc(func(update *models.Update) bool {
+		return update.Message != nil && update.Message.SuccessfulPayment != nil
+	}, h.SuccessPaymentHandler)
 
 	slog.Info("Bot is starting...")
 	b.Start(ctx)

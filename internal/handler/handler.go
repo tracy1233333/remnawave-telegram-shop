@@ -10,6 +10,7 @@ import (
 	"remnawave-tg-shop-bot/internal/config"
 	"remnawave-tg-shop-bot/internal/cryptopay"
 	"remnawave-tg-shop-bot/internal/database"
+	"remnawave-tg-shop-bot/internal/payment"
 	"remnawave-tg-shop-bot/internal/translation"
 	"remnawave-tg-shop-bot/internal/yookasa"
 	"sort"
@@ -24,15 +25,18 @@ type Handler struct {
 	cryptoPayClient    *cryptopay.Client
 	yookasaClient      *yookasa.Client
 	translation        *translation.Manager
+	paymentService     *payment.PaymentService
 }
 
 func NewHandler(
+	paymentService *payment.PaymentService,
 	translation *translation.Manager,
 	customerRepository *database.CustomerRepository,
 	purchaseRepository *database.PurchaseRepository,
 	cryptoPayClient *cryptopay.Client,
 	yookasaClient *yookasa.Client) *Handler {
 	return &Handler{
+		paymentService:     paymentService,
 		customerRepository: customerRepository,
 		purchaseRepository: purchaseRepository,
 		cryptoPayClient:    cryptoPayClient,
@@ -42,12 +46,13 @@ func NewHandler(
 }
 
 const (
-	CallbackBuy     = "buy"
-	CallbackSell    = "sell"
-	CallbackStart   = "start"
-	CallbackCrypto  = "crypto"
-	CallbackCard    = "card"
-	CallbackConnect = "connect"
+	CallbackBuy           = "buy"
+	CallbackSell          = "sell"
+	CallbackStart         = "start"
+	CallbackCrypto        = "crypto"
+	CallbackCard          = "card"
+	CallbackConnect       = "connect"
+	CallbackTelegramStars = "telegram_stars"
 )
 
 func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -242,6 +247,9 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 				{
 					{Text: h.translation.GetText(langCode, "crypto_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCrypto, month)},
 					{Text: h.translation.GetText(langCode, "card_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCard, month)},
+				},
+				{
+					{Text: "⭐Telegram Stars", CallbackData: fmt.Sprintf("%s?month=%s", CallbackTelegramStars, month)},
 				},
 				{
 					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},
@@ -459,6 +467,104 @@ func (h Handler) ConnectCallbackHandler(ctx context.Context, b *bot.Bot, update 
 
 	if err != nil {
 		slog.Error("Error sending connect message", err)
+	}
+}
+
+func (h Handler) PreCheckoutCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	_, err := b.AnswerPreCheckoutQuery(ctx, &bot.AnswerPreCheckoutQueryParams{
+		PreCheckoutQueryID: update.PreCheckoutQuery.ID,
+		OK:                 true,
+	})
+	if err != nil {
+		slog.Error("Error sending answer pre checkout query", err)
+	}
+}
+
+func (h Handler) SuccessPaymentHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	purchaseId, err := strconv.Atoi(update.Message.SuccessfulPayment.InvoicePayload)
+	if err != nil {
+		slog.Error("Error parsing purchase id", err)
+	}
+
+	err = h.paymentService.ProcessPurchaseById(int64(purchaseId))
+	if err != nil {
+		slog.Error("Error processing purchase", err)
+	}
+
+}
+
+func (h Handler) TelegramStarsCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	callback := update.CallbackQuery.Message.Message
+	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
+	month, err := strconv.Atoi(callbackQuery["month"])
+	if err != nil {
+		slog.Error("Error getting month from query", err)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	customer, err := h.customerRepository.FindByTelegramId(ctx, callback.Chat.ID)
+	if err != nil {
+		slog.Error("Error finding customer", err)
+	}
+	if customer == nil {
+		slog.Error("customer not exist", "chatID", callback.Chat.ID, "error", err)
+		return
+	}
+
+	price := calculatePrice(month)
+	purchaseId, err := h.purchaseRepository.Create(ctx, &database.Purchase{
+		InvoiceType: database.InvoiceTypeTelegram,
+		Status:      database.PurchaseStatusNew,
+		Amount:      float64(price),
+		Currency:    "STARS",
+		CustomerID:  customer.ID,
+		Month:       month,
+	})
+	if err != nil {
+		slog.Error("Error creating purchase", err)
+		return
+	}
+	langCode := update.CallbackQuery.From.LanguageCode
+
+	invoiceUrl, err := b.CreateInvoiceLink(ctx, &bot.CreateInvoiceLinkParams{
+		Title:    h.translation.GetText(langCode, "invoice_title"),
+		Currency: "XTR",
+		Prices: []models.LabeledPrice{
+			{
+				Label:  h.translation.GetText(langCode, "invoice_label"),
+				Amount: price,
+			},
+		},
+		Description: h.translation.GetText(langCode, "invoice_description"),
+		Payload:     strconv.FormatInt(purchaseId, 10),
+	})
+
+	updates := map[string]interface{}{
+		"status": database.PurchaseStatusPending,
+	}
+
+	err = h.purchaseRepository.UpdateFields(ctx, purchaseId, updates)
+	if err != nil {
+		slog.Error("Error updating purchase", err)
+		return
+	}
+
+	_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+		ChatID:    callback.Chat.ID,
+		MessageID: callback.ID,
+		ReplyMarkup: models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					{Text: h.translation.GetText(langCode, "pay_button"), URL: invoiceUrl},
+					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: buildSellCallbackData(month)},
+				},
+			},
+		},
+	})
+	if err != nil {
+		slog.Error("Error updating sell message", err)
 	}
 }
 
