@@ -62,8 +62,10 @@ func main() {
 	paymentService := payment.NewPaymentService(tm, purchaseRepository, remnawaveClient, customerRepository, b)
 
 	cronScheduler := setupInvoiceChecker(purchaseRepository, cryptoPayClient, paymentService, yookasaClient)
-	cronScheduler.Start()
-	defer cronScheduler.Stop()
+	if cronScheduler != nil {
+		cronScheduler.Start()
+		defer cronScheduler.Stop()
+	}
 
 	subService := notification.NewSubscriptionService(customerRepository, b, tm)
 
