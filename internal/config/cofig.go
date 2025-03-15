@@ -100,7 +100,7 @@ func TrafficLimit() int64 {
 }
 
 func IsCryptoPayEnabled() bool {
-	return conf.isTelegramStarsEnabled
+	return conf.isCryptoEnabled
 }
 
 func IsYookasaEnabled() bool {
