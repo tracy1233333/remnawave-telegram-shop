@@ -26,13 +26,16 @@ The application requires the following environment variables to be set:
 | `POSTGRES_DB` | PostgreSQL database name                           |
 | `REMNAWAVE_URL` | Remnawave API URL                                  |
 | `REMNAWAVE_TOKEN` | Authentication token for Remnawave API             |
+| `CRYPTO_PAY_ENABLED` | Enable/disable CryptoPay payment method (true/false) |
 | `CRYPTO_PAY_TOKEN` | CryptoPay API token                                |
 | `CRYPTO_PAY_URL` | CryptoPay API URL                                  |
+| `YOOKASA_ENABLED` | Enable/disable YooKassa payment method (true/false) |
 | `YOOKASA_SECRET_KEY` | YooKassa API secret key                            |
 | `YOOKASA_SHOP_ID` | YooKassa shop identifier                           |
 | `YOOKASA_URL` | YooKassa API URL                                   |
 | `YOOKASA_EMAIL` | Email address associated with YooKassa account     |
 | `TRAFFIC_LIMIT` | Maximum allowed traffic in gb (0 to set unlimited) |
+| `TELEGRAM_STARS_ENABLED` | Enable/disable Telegram Stars payment method (true/false) |
 | `SERVER_STATUS_URL` | URL to server status page (optional) - if not set, button will not be displayed |
 | `SUPPORT_URL` | URL to support chat or page (optional) - if not set, button will not be displayed |
 | `FEEDBACK_URL` | URL to feedback/reviews page (optional) - if not set, button will not be displayed |
@@ -64,6 +67,7 @@ The bot includes a notification system that runs daily at 16:00 UTC to check for
 ### Payment Systems
 - [YooKassa API](https://yookassa.ru/developers/api)
 - [CryptoPay API](https://help.crypt.bot/crypto-pay-api)
+- Telegram Stars
 
 
 ## Setup Instructions
