@@ -12,6 +12,7 @@ import (
 	"remnawave-tg-shop-bot/internal/remnawave"
 	"remnawave-tg-shop-bot/internal/translation"
 	"remnawave-tg-shop-bot/internal/yookasa"
+	"strconv"
 	"time"
 )
 
@@ -104,24 +105,26 @@ func (s PaymentService) ProcessPurchaseById(purchaseId int64) error {
 	return nil
 }
 
-func (s PaymentService) CreatePurchase(ctx context.Context, amount int, months int, customerID int64, invoiceType database.InvoiceType) (string, error) {
+func (s PaymentService) CreatePurchase(ctx context.Context, amount int, months int, customer *database.Customer, invoiceType database.InvoiceType) (string, error) {
 	switch invoiceType {
 	case database.InvoiceTypeCrypto:
-		return s.createCryptoInvoice(ctx, amount, months, customerID)
+		return s.createCryptoInvoice(ctx, amount, months, customer)
 	case database.InvoiceTypeYookasa:
-		return s.createYookasaInvoice(ctx, amount, months, customerID)
+		return s.createYookasaInvoice(ctx, amount, months, customer)
+	case database.InvoiceTypeTelegram:
+		return s.createTelegramInvoice(ctx, amount, months, customer)
 	default:
 		return "", fmt.Errorf("unknown invoice type: %s", invoiceType)
 	}
 }
 
-func (s PaymentService) createCryptoInvoice(ctx context.Context, amount int, months int, customerID int64) (string, error) {
+func (s PaymentService) createCryptoInvoice(ctx context.Context, amount int, months int, customer *database.Customer) (string, error) {
 	purchaseId, err := s.purchaseRepository.Create(ctx, &database.Purchase{
 		InvoiceType: database.InvoiceTypeCrypto,
 		Status:      database.PurchaseStatusNew,
 		Amount:      float64(amount),
 		Currency:    "RUB",
-		CustomerID:  customerID,
+		CustomerID:  customer.ID,
 		Month:       months,
 	})
 	if err != nil {
@@ -159,13 +162,13 @@ func (s PaymentService) createCryptoInvoice(ctx context.Context, amount int, mon
 	return invoice.BotInvoiceUrl, nil
 }
 
-func (s PaymentService) createYookasaInvoice(ctx context.Context, amount int, months int, customerId int64) (string, error) {
+func (s PaymentService) createYookasaInvoice(ctx context.Context, amount int, months int, customer *database.Customer) (string, error) {
 	purchaseId, err := s.purchaseRepository.Create(ctx, &database.Purchase{
 		InvoiceType: database.InvoiceTypeYookasa,
 		Status:      database.PurchaseStatusNew,
 		Amount:      float64(amount),
 		Currency:    "RUB",
-		CustomerID:  customerId,
+		CustomerID:  customer.ID,
 		Month:       months,
 	})
 	if err != nil {
@@ -173,7 +176,7 @@ func (s PaymentService) createYookasaInvoice(ctx context.Context, amount int, mo
 		return "", err
 	}
 
-	invoice, err := s.yookasaClient.CreateInvoice(ctx, amount, months, customerId, purchaseId)
+	invoice, err := s.yookasaClient.CreateInvoice(ctx, amount, months, customer.ID, purchaseId)
 	if err != nil {
 		slog.Error("Error creating invoice", err)
 		return "", err
@@ -192,4 +195,44 @@ func (s PaymentService) createYookasaInvoice(ctx context.Context, amount int, mo
 	}
 
 	return invoice.Confirmation.ConfirmationURL, nil
+}
+
+func (s PaymentService) createTelegramInvoice(ctx context.Context, amount int, months int, customer *database.Customer) (string, error) {
+	purchaseId, err := s.purchaseRepository.Create(ctx, &database.Purchase{
+		InvoiceType: database.InvoiceTypeTelegram,
+		Status:      database.PurchaseStatusNew,
+		Amount:      float64(amount),
+		Currency:    "STARS",
+		CustomerID:  customer.ID,
+		Month:       months,
+	})
+	if err != nil {
+		slog.Error("Error creating purchase", err)
+		return "", nil
+	}
+
+	invoiceUrl, err := s.telegramBot.CreateInvoiceLink(ctx, &bot.CreateInvoiceLinkParams{
+		Title:    s.translation.GetText(customer.Language, "invoice_title"),
+		Currency: "XTR",
+		Prices: []models.LabeledPrice{
+			{
+				Label:  s.translation.GetText(customer.Language, "invoice_label"),
+				Amount: amount,
+			},
+		},
+		Description: s.translation.GetText(customer.Language, "invoice_description"),
+		Payload:     strconv.FormatInt(purchaseId, 10),
+	})
+
+	updates := map[string]interface{}{
+		"status": database.PurchaseStatusPending,
+	}
+
+	err = s.purchaseRepository.UpdateFields(ctx, purchaseId, updates)
+	if err != nil {
+		slog.Error("Error updating purchase", err)
+		return "", err
+	}
+
+	return invoiceUrl, nil
 }

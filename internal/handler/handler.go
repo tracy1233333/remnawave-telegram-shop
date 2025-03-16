@@ -223,7 +223,7 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 
 	if config.IsTelegramStarsEnabled() {
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
-			{Text: "⭐Telegram Stars", CallbackData: fmt.Sprintf("%s?month=%s", CallbackTelegramStars, month)},
+			{Text: "⭐Telegram Stars", CallbackData: fmt.Sprintf("%s?month=%s&invoiceType=%s", CallbackPayment, month, database.InvoiceTypeTelegram)},
 		})
 	}
 
@@ -266,7 +266,7 @@ func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update 
 	}
 
 	price := calculatePrice(month)
-	paymentURL, err := h.paymentService.CreatePurchase(ctx, price, month, customer.ID, invoiceType)
+	paymentURL, err := h.paymentService.CreatePurchase(ctx, price, month, customer, invoiceType)
 
 	if err != nil {
 		slog.Error("Error creating payment", err)
@@ -368,81 +368,6 @@ func (h Handler) SuccessPaymentHandler(ctx context.Context, b *bot.Bot, update *
 		slog.Error("Error processing purchase", err)
 	}
 
-}
-
-func (h Handler) TelegramStarsCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	callback := update.CallbackQuery.Message.Message
-	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
-	month, err := strconv.Atoi(callbackQuery["month"])
-	if err != nil {
-		slog.Error("Error getting month from query", err)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	customer, err := h.customerRepository.FindByTelegramId(ctx, callback.Chat.ID)
-	if err != nil {
-		slog.Error("Error finding customer", err)
-	}
-	if customer == nil {
-		slog.Error("customer not exist", "chatID", callback.Chat.ID, "error", err)
-		return
-	}
-	langCode := update.CallbackQuery.From.LanguageCode
-
-	price := calculatePrice(month)
-	purchaseId, err := h.purchaseRepository.Create(ctx, &database.Purchase{
-		InvoiceType: database.InvoiceTypeTelegram,
-		Status:      database.PurchaseStatusNew,
-		Amount:      float64(price),
-		Currency:    "STARS",
-		CustomerID:  customer.ID,
-		Month:       month,
-	})
-	if err != nil {
-		slog.Error("Error creating purchase", err)
-		return
-	}
-
-	invoiceUrl, err := b.CreateInvoiceLink(ctx, &bot.CreateInvoiceLinkParams{
-		Title:    h.translation.GetText(langCode, "invoice_title"),
-		Currency: "XTR",
-		Prices: []models.LabeledPrice{
-			{
-				Label:  h.translation.GetText(langCode, "invoice_label"),
-				Amount: price,
-			},
-		},
-		Description: h.translation.GetText(langCode, "invoice_description"),
-		Payload:     strconv.FormatInt(purchaseId, 10),
-	})
-
-	updates := map[string]interface{}{
-		"status": database.PurchaseStatusPending,
-	}
-
-	err = h.purchaseRepository.UpdateFields(ctx, purchaseId, updates)
-	if err != nil {
-		slog.Error("Error updating purchase", err)
-		return
-	}
-
-	_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
-		ChatID:    callback.Chat.ID,
-		MessageID: callback.ID,
-		ReplyMarkup: models.InlineKeyboardMarkup{
-			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{
-					{Text: h.translation.GetText(langCode, "pay_button"), URL: invoiceUrl},
-					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: buildSellCallbackData(month)},
-				},
-			},
-		},
-	})
-	if err != nil {
-		slog.Error("Error updating sell message", err)
-	}
 }
 
 func buildConnectText(customer *database.Customer, langCode string) string {
