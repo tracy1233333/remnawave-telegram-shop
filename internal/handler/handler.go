@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"fmt"
-	"github.com/biter777/countries"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"log/slog"
@@ -12,8 +11,8 @@ import (
 	"remnawave-tg-shop-bot/internal/database"
 	"remnawave-tg-shop-bot/internal/payment"
 	"remnawave-tg-shop-bot/internal/translation"
+	"remnawave-tg-shop-bot/internal/utils"
 	"remnawave-tg-shop-bot/internal/yookasa"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -49,10 +48,9 @@ const (
 	CallbackBuy           = "buy"
 	CallbackSell          = "sell"
 	CallbackStart         = "start"
-	CallbackCrypto        = "crypto"
-	CallbackCard          = "card"
 	CallbackConnect       = "connect"
 	CallbackTelegramStars = "telegram_stars"
+	CallbackPayment       = "payment"
 )
 
 func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -121,41 +119,11 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: inlineKeyboard,
 		},
-		Text: fmt.Sprintf(h.translation.GetText(langCode, "greeting"), bot.EscapeMarkdown(buildAvailableCountriesLists(langCode))),
+		Text: fmt.Sprintf(h.translation.GetText(langCode, "greeting"), bot.EscapeMarkdown(utils.BuildAvailableCountriesLists(langCode))),
 	})
 	if err != nil {
 		slog.Error("Error sending /start message", err)
 	}
-}
-
-func buildAvailableCountriesLists(langCode string) string {
-	var locationsText strings.Builder
-	countriesMap := config.Countries()
-
-	keys := make([]string, 0, len(countriesMap))
-	for k := range countriesMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for i, k := range keys {
-		country := strings.Split(countriesMap[k], " ")
-		if i == len(keys)-1 {
-			if langCode == "ru" {
-				locationsText.WriteString(fmt.Sprintf("└ %s%s\n", country[0], countries.ByName(country[1]).StringRus()))
-			} else {
-				locationsText.WriteString(fmt.Sprintf("└ %s%s\n", country[0], countries.ByName(country[1]).String()))
-			}
-		} else {
-			if langCode == "ru" {
-				locationsText.WriteString(fmt.Sprintf("├ %s%s\n", country[0], countries.ByName(country[1]).StringRus()))
-			} else {
-				locationsText.WriteString(fmt.Sprintf("├ %s%s\n", country[0], countries.ByName(country[1]).String()))
-			}
-		}
-	}
-
-	return locationsText.String()
 }
 
 func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -196,7 +164,7 @@ func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: inlineKeyboard,
 		},
-		Text: fmt.Sprintf(h.translation.GetText(langCode, "greeting"), bot.EscapeMarkdown(buildAvailableCountriesLists(langCode))),
+		Text: fmt.Sprintf(h.translation.GetText(langCode, "greeting"), bot.EscapeMarkdown(utils.BuildAvailableCountriesLists(langCode))),
 	})
 	if err != nil {
 		slog.Error("Error sending /start message", err)
@@ -243,13 +211,13 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 
 	if config.IsCryptoPayEnabled() {
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
-			{Text: h.translation.GetText(langCode, "crypto_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCrypto, month)},
+			{Text: h.translation.GetText(langCode, "crypto_button"), CallbackData: fmt.Sprintf("%s?month=%s&invoiceType=%s", CallbackPayment, month, database.InvoiceTypeCrypto)},
 		})
 	}
 
 	if config.IsYookasaEnabled() {
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
-			{Text: h.translation.GetText(langCode, "card_button"), CallbackData: fmt.Sprintf("%s?month=%s", CallbackCard, month)},
+			{Text: h.translation.GetText(langCode, "card_button"), CallbackData: fmt.Sprintf("%s?month=%s&invoiceType=%s", CallbackPayment, month, database.InvoiceTypeYookasa)},
 		})
 	}
 
@@ -276,7 +244,7 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 	}
 }
 
-func (h Handler) CryptoCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
 	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
 	month, err := strconv.Atoi(callbackQuery["month"])
@@ -284,6 +252,7 @@ func (h Handler) CryptoCallbackHandler(ctx context.Context, b *bot.Bot, update *
 		slog.Error("Error getting month from query", err)
 		return
 	}
+	invoiceType := database.InvoiceType(callbackQuery["invoiceType"])
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -297,45 +266,10 @@ func (h Handler) CryptoCallbackHandler(ctx context.Context, b *bot.Bot, update *
 	}
 
 	price := calculatePrice(month)
+	paymentURL, err := h.paymentService.CreatePurchase(ctx, price, month, customer.ID, invoiceType)
 
-	purchaseId, err := h.purchaseRepository.Create(ctx, &database.Purchase{
-		InvoiceType: database.InvoiceTypeCrypto,
-		Status:      database.PurchaseStatusNew,
-		Amount:      float64(price),
-		Currency:    "RUB",
-		CustomerID:  customer.ID,
-		Month:       month,
-	})
 	if err != nil {
-		slog.Error("Error creating purchase", err)
-		return
-	}
-
-	invoice, err := h.cryptoPayClient.CreateInvoice(&cryptopay.InvoiceRequest{
-		CurrencyType:   "fiat",
-		Fiat:           "RUB",
-		Amount:         fmt.Sprintf("%d", price),
-		AcceptedAssets: "USDT",
-		Payload:        fmt.Sprintf("customerId=%d&purchaseId=%d", callback.Chat.ID, purchaseId),
-		Description:    fmt.Sprintf("Subscription on %d month", month),
-		PaidBtnName:    "callback",
-		PaidBtnUrl:     config.BotURL(),
-	})
-	if err != nil {
-		slog.Error("Error creating invoice", err)
-		return
-	}
-
-	updates := map[string]interface{}{
-		"crypto_invoice_url": invoice.BotInvoiceUrl,
-		"crypto_invoice_id":  invoice.InvoiceID,
-		"status":             database.PurchaseStatusPending,
-	}
-
-	err = h.purchaseRepository.UpdateFields(ctx, purchaseId, updates)
-	if err != nil {
-		slog.Error("Error updating purchase", err)
-		return
+		slog.Error("Error creating payment", err)
 	}
 
 	langCode := update.CallbackQuery.From.LanguageCode
@@ -346,7 +280,7 @@ func (h Handler) CryptoCallbackHandler(ctx context.Context, b *bot.Bot, update *
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: h.translation.GetText(langCode, "pay_button"), URL: invoice.BotInvoiceUrl},
+					{Text: h.translation.GetText(langCode, "pay_button"), URL: paymentURL},
 					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: buildSellCallbackData(month)},
 				},
 			},
@@ -356,76 +290,6 @@ func (h Handler) CryptoCallbackHandler(ctx context.Context, b *bot.Bot, update *
 		slog.Error("Error updating sell message", err)
 	}
 
-}
-
-func (h Handler) YookasaCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	callback := update.CallbackQuery.Message.Message
-	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
-	month, err := strconv.Atoi(callbackQuery["month"])
-	if err != nil {
-		slog.Error("Error getting month from query", err)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	customer, err := h.customerRepository.FindByTelegramId(ctx, callback.Chat.ID)
-	if err != nil {
-		slog.Error("Error finding customer", err)
-	}
-	if customer == nil {
-		slog.Error("customer not exist", "chatID", callback.Chat.ID, "error", err)
-		return
-	}
-
-	price := calculatePrice(month)
-	purchaseId, err := h.purchaseRepository.Create(ctx, &database.Purchase{
-		InvoiceType: database.InvoiceTypeYookasa,
-		Status:      database.PurchaseStatusNew,
-		Amount:      float64(price),
-		Currency:    "RUB",
-		CustomerID:  customer.ID,
-		Month:       month,
-	})
-	if err != nil {
-		slog.Error("Error creating purchase", err)
-		return
-	}
-	langCode := update.CallbackQuery.From.LanguageCode
-
-	invoice, err := h.yookasaClient.CreateInvoice(ctx, price, month, customer.ID, purchaseId)
-	if err != nil {
-		slog.Error("Error creating invoice", err)
-		return
-	}
-
-	updates := map[string]interface{}{
-		"yookasa_url": invoice.Confirmation.ConfirmationURL,
-		"yookasa_id":  invoice.ID,
-		"status":      database.PurchaseStatusPending,
-	}
-
-	err = h.purchaseRepository.UpdateFields(ctx, purchaseId, updates)
-	if err != nil {
-		slog.Error("Error updating purchase", err)
-		return
-	}
-
-	_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
-		ChatID:    callback.Chat.ID,
-		MessageID: callback.ID,
-		ReplyMarkup: models.InlineKeyboardMarkup{
-			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{
-					{Text: h.translation.GetText(langCode, "pay_button"), URL: invoice.Confirmation.ConfirmationURL},
-					{Text: h.translation.GetText(langCode, "back_button"), CallbackData: buildSellCallbackData(month)},
-				},
-			},
-		},
-	})
-	if err != nil {
-		slog.Error("Error updating sell message", err)
-	}
 }
 
 func (h Handler) ConnectCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -525,6 +389,7 @@ func (h Handler) TelegramStarsCallbackHandler(ctx context.Context, b *bot.Bot, u
 		slog.Error("customer not exist", "chatID", callback.Chat.ID, "error", err)
 		return
 	}
+	langCode := update.CallbackQuery.From.LanguageCode
 
 	price := calculatePrice(month)
 	purchaseId, err := h.purchaseRepository.Create(ctx, &database.Purchase{
@@ -539,7 +404,6 @@ func (h Handler) TelegramStarsCallbackHandler(ctx context.Context, b *bot.Bot, u
 		slog.Error("Error creating purchase", err)
 		return
 	}
-	langCode := update.CallbackQuery.From.LanguageCode
 
 	invoiceUrl, err := b.CreateInvoiceLink(ctx, &bot.CreateInvoiceLinkParams{
 		Title:    h.translation.GetText(langCode, "invoice_title"),
