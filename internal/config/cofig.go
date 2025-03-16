@@ -164,7 +164,7 @@ func InitConfig() {
 	}
 
 	conf.isYookasaEnabled = os.Getenv("YOOKASA_ENABLED") == "true"
-	if !conf.isYookasaEnabled {
+	if conf.isYookasaEnabled {
 		conf.yookasaURL = os.Getenv("YOOKASA_URL")
 		conf.yookasaShopId = os.Getenv("YOOKASA_SHOP_ID")
 		conf.yookasaSecretKey = os.Getenv("YOOKASA_SECRET_KEY")
