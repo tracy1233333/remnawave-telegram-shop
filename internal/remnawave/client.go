@@ -29,19 +29,58 @@ func NewClient(baseURL string, token string) *Client {
 	}
 }
 
-func (r *Client) CreateOrUpdateUser(ctx context.Context, username string, month int) (*User, error) {
+func (r *Client) GetUsers(ctx context.Context, pageSize int, start int) (*UsersResponse, error) {
+	url := fmt.Sprintf("%s/api/users/v2?size=%d&start=%d", r.baseURL, pageSize, start)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+r.token)
+
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var wrapper ResponseWrapper[UsersResponse]
+	if err := json.NewDecoder(resp.Body).Decode(&wrapper); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &wrapper.Response, nil
+
+}
+
+func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, telegramId int64, month int) (*User, error) {
+	username := generateUsername(customerId, telegramId)
 	existingUser, err := r.GetUser(ctx, username)
+
 	if err != nil {
 		return nil, err
 	}
 
 	if existingUser == nil {
-		newUser, err := r.createUser(ctx, username, month)
+		newUser, err := r.createUser(ctx, customerId, telegramId, month)
 		if err != nil {
 			return nil, err
 		}
 		return newUser, nil
 	} else {
+		if existingUser.TelegramId == nil {
+			existingUser.TelegramId = &telegramId
+		}
 		updatedUser, err := r.updateUser(ctx, existingUser, month*30)
 		if err != nil {
 			return nil, err
@@ -56,6 +95,7 @@ func (r *Client) updateUser(ctx context.Context, existingUser *User, days int) (
 	userUpdate := &UserUpdate{
 		UUID:              existingUser.UUID,
 		ExpireAt:          newExpire,
+		TelegramId:        *existingUser.TelegramId,
 		Status:            ACTIVE,
 		TrafficLimitBytes: config.TrafficLimit(),
 	}
@@ -104,8 +144,9 @@ func (r *Client) updateUser(ctx context.Context, existingUser *User, days int) (
 	return &wrapper.Response, nil
 }
 
-func (r *Client) createUser(ctx context.Context, username string, month int) (*User, error) {
+func (r *Client) createUser(ctx context.Context, customerId int64, telegramId int64, month int) (*User, error) {
 	expireAt := time.Now().UTC().AddDate(0, 0, month*30)
+	username := generateUsername(customerId, telegramId)
 
 	inbounds := *r.getInbounds(ctx)
 	inboundsId := make([]uuid.UUID, len(inbounds))
@@ -119,6 +160,7 @@ func (r *Client) createUser(ctx context.Context, username string, month int) (*U
 		Status:               ACTIVE,
 		TrafficLimitStrategy: MONTH,
 		SubscriptionUuid:     nil,
+		TelegramId:           telegramId,
 		ExpireAt:             expireAt,
 		TrafficLimitBytes:    config.TrafficLimit(),
 	}
@@ -164,6 +206,10 @@ func (r *Client) createUser(ctx context.Context, username string, month int) (*U
 	}
 
 	return &wrapper.Response, nil
+}
+
+func generateUsername(customerId int64, telegramId int64) string {
+	return fmt.Sprintf("%d_%d", customerId, telegramId)
 }
 
 func (r *Client) GetUser(ctx context.Context, username string) (*User, error) {

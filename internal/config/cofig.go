@@ -29,6 +29,7 @@ type config struct {
 	isYookasaEnabled       bool
 	isCryptoEnabled        bool
 	isTelegramStarsEnabled bool
+	adminTelegramId        int64
 }
 
 var conf config
@@ -111,12 +112,21 @@ func IsTelegramStarsEnabled() bool {
 	return conf.isTelegramStarsEnabled
 }
 
+func GetAdminTelegramId() int64 {
+	return conf.adminTelegramId
+}
+
 const bytesInGigabyte = 1073741824
 
 func InitConfig() {
 	err := godotenv.Load(".env")
 	if err != nil {
 		slog.Warn("Env file not found")
+	}
+
+	conf.adminTelegramId, err = strconv.ParseInt(os.Getenv("ADMIN_TELEGRAM_ID"), 10, 64)
+	if err != nil {
+		panic("ADMIN_TELEGRAM_ID .env variable not set")
 	}
 
 	conf.telegramToken = os.Getenv("TELEGRAM_TOKEN")

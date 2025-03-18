@@ -48,6 +48,7 @@ type UserUpdate struct {
 	ActiveUserInbounds   []string             `json:"activeUserInbounds,omitempty"`
 	ExpireAt             time.Time            `json:"expireAt,omitempty"`
 	Description          string               `json:"description,omitempty"`
+	TelegramId           int64                `json:"telegramId,omitempty"`
 }
 type User struct {
 	UUID                     string               `json:"uuid"`
@@ -73,6 +74,12 @@ type User struct {
 	UpdatedAt                time.Time            `json:"updatedAt"`
 	ActiveUserInbounds       []Inbound            `json:"activeUserInbounds"`
 	SubscriptionURL          string               `json:"subscriptionUrl"`
+	TelegramId               *int64               `json:"telegramId"`
+}
+
+type UsersResponse struct {
+	Total int    `json:"total"`
+	Users []User `json:"users"`
 }
 
 type Inbound struct {
@@ -101,6 +108,7 @@ type UserCreate struct {
 	LastTrafficResetAt   time.Time            `json:"lastTrafficResetAt,omitempty"`
 	Description          string               `json:"description,omitempty"`
 	ActivateAllInbounds  bool                 `json:"activateAllInbounds,omitempty"`
+	TelegramId           int64                `json:"telegramId,omitempty"`
 }
 
 type Status string

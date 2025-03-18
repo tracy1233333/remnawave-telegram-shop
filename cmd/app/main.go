@@ -19,6 +19,7 @@ import (
 	"remnawave-tg-shop-bot/internal/notification"
 	"remnawave-tg-shop-bot/internal/payment"
 	"remnawave-tg-shop-bot/internal/remnawave"
+	"remnawave-tg-shop-bot/internal/sync"
 	"remnawave-tg-shop-bot/internal/translation"
 	"remnawave-tg-shop-bot/internal/yookasa"
 	"strconv"
@@ -73,7 +74,9 @@ func main() {
 	subscriptionNotificationCronScheduler.Start()
 	defer subscriptionNotificationCronScheduler.Stop()
 
-	h := handler.NewHandler(paymentService, tm, customerRepository, purchaseRepository, cryptoPayClient, yookasaClient)
+	syncService := sync.NewSyncService(remnawaveClient, customerRepository)
+
+	h := handler.NewHandler(syncService, paymentService, tm, customerRepository, purchaseRepository, cryptoPayClient, yookasaClient)
 
 	me, err := b.GetMe(ctx)
 	if err != nil {
@@ -88,10 +91,6 @@ func main() {
 		LanguageCode: "ru",
 	})
 
-	if err != nil {
-		panic(err)
-	}
-
 	_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
 		Commands: []models.BotCommand{
 			{Command: "start", Description: "Start using the bot"},
@@ -100,14 +99,11 @@ func main() {
 		LanguageCode: "en",
 	})
 
-	if err != nil {
-		panic(err)
-	}
-
 	config.SetBotURL(fmt.Sprintf("https://t.me/%s", me.Username))
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, h.StartCommandHandler)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/connect", bot.MatchTypeExact, h.ConnectCommandHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/sync", bot.MatchTypeExact, h.SyncUsersCommandHandler, isAdminMiddleware)
 
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackBuy, bot.MatchTypeExact, h.BuyCallbackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackStart, bot.MatchTypeExact, h.StartCallbackHandler)
@@ -124,6 +120,16 @@ func main() {
 
 	slog.Info("Bot is starting...")
 	b.Start(ctx)
+}
+
+func isAdminMiddleware(next bot.HandlerFunc) bot.HandlerFunc {
+	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		if update.Message != nil && update.Message.From.ID == config.GetAdminTelegramId() {
+			next(ctx, b, update)
+		} else {
+			return
+		}
+	}
 }
 
 func setupSubscriptionNotifier(subService *notification.SubscriptionService) *cron.Cron {

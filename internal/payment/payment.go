@@ -65,9 +65,7 @@ func (s PaymentService) ProcessPurchaseById(purchaseId int64) error {
 		return fmt.Errorf("customer %s not found", purchase.CustomerID)
 	}
 
-	username := fmt.Sprintf("%d_%d", customer.ID, customer.TelegramID)
-
-	user, err := s.remnawaveClient.CreateOrUpdateUser(ctx, username, purchase.Month)
+	user, err := s.remnawaveClient.CreateOrUpdateUser(ctx, customer.ID, customer.TelegramID, purchase.Month)
 	if err != nil {
 		return err
 	}

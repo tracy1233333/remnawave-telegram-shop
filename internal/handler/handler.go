@@ -10,6 +10,7 @@ import (
 	"remnawave-tg-shop-bot/internal/cryptopay"
 	"remnawave-tg-shop-bot/internal/database"
 	"remnawave-tg-shop-bot/internal/payment"
+	"remnawave-tg-shop-bot/internal/sync"
 	"remnawave-tg-shop-bot/internal/translation"
 	"remnawave-tg-shop-bot/internal/utils"
 	"remnawave-tg-shop-bot/internal/yookasa"
@@ -25,9 +26,11 @@ type Handler struct {
 	yookasaClient      *yookasa.Client
 	translation        *translation.Manager
 	paymentService     *payment.PaymentService
+	syncService        *sync.SyncService
 }
 
 func NewHandler(
+	syncService *sync.SyncService,
 	paymentService *payment.PaymentService,
 	translation *translation.Manager,
 	customerRepository *database.CustomerRepository,
@@ -35,6 +38,7 @@ func NewHandler(
 	cryptoPayClient *cryptopay.Client,
 	yookasaClient *yookasa.Client) *Handler {
 	return &Handler{
+		syncService:        syncService,
 		paymentService:     paymentService,
 		customerRepository: customerRepository,
 		purchaseRepository: purchaseRepository,
@@ -45,12 +49,11 @@ func NewHandler(
 }
 
 const (
-	CallbackBuy           = "buy"
-	CallbackSell          = "sell"
-	CallbackStart         = "start"
-	CallbackConnect       = "connect"
-	CallbackTelegramStars = "telegram_stars"
-	CallbackPayment       = "payment"
+	CallbackBuy     = "buy"
+	CallbackSell    = "sell"
+	CallbackStart   = "start"
+	CallbackConnect = "connect"
+	CallbackPayment = "payment"
 )
 
 func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -368,6 +371,17 @@ func (h Handler) SuccessPaymentHandler(ctx context.Context, b *bot.Bot, update *
 		slog.Error("Error processing purchase", err)
 	}
 
+}
+
+func (h Handler) SyncUsersCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	h.syncService.Sync()
+	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   "Users synced",
+	})
+	if err != nil {
+		slog.Error("Error sending sync message", err)
+	}
 }
 
 func buildConnectText(customer *database.Customer, langCode string) string {
