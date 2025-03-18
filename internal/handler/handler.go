@@ -196,8 +196,8 @@ func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *mod
 		},
 		Text: fmt.Sprintf(h.translation.GetText(langCode, "pricing_info"),
 			calculatePrice(1),
-			calculatePrice(2),
-			calculatePrice(3)),
+			calculatePrice(3),
+			calculatePrice(6)),
 	})
 	if err != nil {
 		slog.Error("Error sending buy message", err)
