@@ -1,3 +1,4 @@
+
 # Remnawave Telegram Shop
 
 ## Description
@@ -88,9 +89,9 @@ The bot includes a notification system that runs daily at 16:00 UTC to check for
 2. Create a `.env` file in the root directory with all the environment variables listed above
 3. Run the application:
 
-```bash
-docker compose up -d
-```
+   ```bash
+   docker compose up -d
+   ```
 
 ## Update Instructions
 
@@ -103,3 +104,11 @@ docker compose up -d
    ```bash
    docker compose down && docker compose up -d
    ```
+
+## Donations
+
+If you appreciate this project and want to help keep it running (and fuel those caffeine-fueled coding marathons), consider donating. Your support helps drive future updates and improvements.
+
+**Donation Methods:**
+
+- **Ethereum:** `0xd6d35119f8EE2a54Df344E4812A47e1C348ADE1c`
