@@ -1,4 +1,3 @@
-
 # Remnawave Telegram Shop
 
 ## Description
@@ -48,6 +47,8 @@ The application requires the following environment variables to be set:
 | `FEEDBACK_URL`           | URL to feedback/reviews page (optional) - if not set, button will not be displayed |
 | `CHANNEL_URL`            | URL to Telegram channel (optional) - if not set, button will not be displayed      |
 | `ADMIN_TELEGRAM_ID`      | Admin telegram id                                                                  |
+| `TRIAL_TRAFFIC_LIMIT`    | Maximum allowed traffic in gb for trial subscriptions                              |                                                                                    |
+| `TRIAL_DAYS`             | Number of days for trial subscriptions                                             |
 
 ## User Interface
 
@@ -107,7 +108,8 @@ The bot includes a notification system that runs daily at 16:00 UTC to check for
 
 ## Donations
 
-If you appreciate this project and want to help keep it running (and fuel those caffeine-fueled coding marathons), consider donating. Your support helps drive future updates and improvements.
+If you appreciate this project and want to help keep it running (and fuel those caffeine-fueled coding marathons),
+consider donating. Your support helps drive future updates and improvements.
 
 **Donation Methods:**
 

@@ -30,10 +30,19 @@ type config struct {
 	isCryptoEnabled        bool
 	isTelegramStarsEnabled bool
 	adminTelegramId        int64
+	trialDays              int
+	trialTrafficLimit      int64
 }
 
 var conf config
 
+func TrialTrafficLimit() int64 {
+	return conf.trialTrafficLimit * bytesInGigabyte
+}
+
+func TrialDays() int {
+	return conf.trialDays
+}
 func FeedbackURL() string {
 	return conf.feedbackURL
 }
@@ -132,6 +141,16 @@ func InitConfig() {
 	conf.telegramToken = os.Getenv("TELEGRAM_TOKEN")
 	if conf.telegramToken == "" {
 		panic("TELEGRAM_TOKEN .env variable not set")
+	}
+
+	conf.trialTrafficLimit, err = strconv.ParseInt(os.Getenv("TRIAL_TRAFFIC_LIMIT"), 10, 64)
+	if err != nil {
+		panic("TRIAL_TRAFFIC_LIMIT .env variable not set")
+	}
+
+	conf.trialDays, err = strconv.Atoi(os.Getenv("TRIAL_DAYS"))
+	if err != nil {
+		panic("TRIAL_DAYS .env variable not set")
 	}
 
 	strPrice := os.Getenv("PRICE")

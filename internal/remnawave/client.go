@@ -63,7 +63,7 @@ func (r *Client) GetUsers(ctx context.Context, pageSize int, start int) (*UsersR
 
 }
 
-func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, telegramId int64, month int) (*User, error) {
+func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, telegramId int64, trafficLimit int64, days int) (*User, error) {
 	username := generateUsername(customerId, telegramId)
 	existingUser, err := r.GetUser(ctx, username)
 
@@ -72,7 +72,7 @@ func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, teleg
 	}
 
 	if existingUser == nil {
-		newUser, err := r.createUser(ctx, customerId, telegramId, month)
+		newUser, err := r.createUser(ctx, customerId, telegramId, trafficLimit, days)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +81,7 @@ func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, teleg
 		if existingUser.TelegramId == nil {
 			existingUser.TelegramId = &telegramId
 		}
-		updatedUser, err := r.updateUser(ctx, existingUser, month*30)
+		updatedUser, err := r.updateUser(ctx, existingUser, trafficLimit, days)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, teleg
 	}
 }
 
-func (r *Client) updateUser(ctx context.Context, existingUser *User, days int) (*User, error) {
+func (r *Client) updateUser(ctx context.Context, existingUser *User, trafficLimit int64, days int) (*User, error) {
 	newExpire := getNewExpire(days, existingUser)
 
 	userUpdate := &UserUpdate{
@@ -97,7 +97,7 @@ func (r *Client) updateUser(ctx context.Context, existingUser *User, days int) (
 		ExpireAt:          newExpire,
 		TelegramId:        *existingUser.TelegramId,
 		Status:            ACTIVE,
-		TrafficLimitBytes: config.TrafficLimit(),
+		TrafficLimitBytes: trafficLimit,
 	}
 
 	jsonData, err := json.Marshal(userUpdate)
@@ -144,8 +144,8 @@ func (r *Client) updateUser(ctx context.Context, existingUser *User, days int) (
 	return &wrapper.Response, nil
 }
 
-func (r *Client) createUser(ctx context.Context, customerId int64, telegramId int64, month int) (*User, error) {
-	expireAt := time.Now().UTC().AddDate(0, 0, month*30)
+func (r *Client) createUser(ctx context.Context, customerId int64, telegramId int64, trafficLimit int64, days int) (*User, error) {
+	expireAt := time.Now().UTC().AddDate(0, 0, days)
 	username := generateUsername(customerId, telegramId)
 
 	inbounds := *r.getInbounds(ctx)
@@ -162,7 +162,7 @@ func (r *Client) createUser(ctx context.Context, customerId int64, telegramId in
 		SubscriptionUuid:     nil,
 		TelegramId:           telegramId,
 		ExpireAt:             expireAt,
-		TrafficLimitBytes:    config.TrafficLimit(),
+		TrafficLimitBytes:    trafficLimit,
 	}
 
 	jsonData, err := json.Marshal(userCreate)

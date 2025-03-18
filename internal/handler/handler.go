@@ -49,15 +49,17 @@ func NewHandler(
 }
 
 const (
-	CallbackBuy     = "buy"
-	CallbackSell    = "sell"
-	CallbackStart   = "start"
-	CallbackConnect = "connect"
-	CallbackPayment = "payment"
+	CallbackBuy           = "buy"
+	CallbackSell          = "sell"
+	CallbackStart         = "start"
+	CallbackConnect       = "connect"
+	CallbackPayment       = "payment"
+	CallbackTrial         = "trial"
+	CallbackActivateTrial = "activate_trial"
 )
 
 func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	ctxWithTime, cancel := context.WithTimeout(ctx, 2*time.Second)
+	ctxWithTime, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	langCode := update.Message.From.LanguageCode
 	existingCustomer, err := h.customerRepository.FindByTelegramId(ctx, update.Message.Chat.ID)
@@ -66,7 +68,7 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 	}
 
 	if existingCustomer == nil {
-		err := h.customerRepository.Create(ctxWithTime, &database.Customer{
+		existingCustomer, err = h.customerRepository.Create(ctxWithTime, &database.Customer{
 			TelegramID: update.Message.Chat.ID,
 			Language:   langCode,
 		})
@@ -87,10 +89,18 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 		}
 	}
 
-	inlineKeyboard := [][]models.InlineKeyboardButton{
+	var inlineKeyboard [][]models.InlineKeyboardButton
+
+	if existingCustomer.SubscriptionLink == nil {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "trial_button"), CallbackData: CallbackTrial},
+		})
+	}
+
+	inlineKeyboard = append(inlineKeyboard, [][]models.InlineKeyboardButton{
 		{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
 		{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
-	}
+	}...)
 
 	if config.ServerStatusURL() != "" {
 		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
@@ -129,13 +139,92 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 	}
 }
 
-func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func (h Handler) TrialCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
 	langCode := update.CallbackQuery.From.LanguageCode
-	inlineKeyboard := [][]models.InlineKeyboardButton{
+	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
+		ChatID:    callback.Chat.ID,
+		MessageID: callback.ID,
+		Text:      h.translation.GetText(langCode, "trial_text"),
+		ParseMode: models.ParseModeMarkdown,
+		ReplyMarkup: models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{{Text: h.translation.GetText(langCode, "activate_trial_button"), CallbackData: CallbackActivateTrial}},
+				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart}},
+			},
+		},
+	})
+	if err != nil {
+		slog.Error("Error sending /trial message", err)
+	}
+}
+
+func (h Handler) ActivateTrialCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	callback := update.CallbackQuery.Message.Message
+	_, err := h.paymentService.ActivateTrial(ctx, update.CallbackQuery.From.ID)
+	langCode := update.CallbackQuery.From.LanguageCode
+	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
+		ChatID:    callback.Chat.ID,
+		MessageID: callback.ID,
+		Text:      h.translation.GetText(langCode, "trial_activated"),
+		ParseMode: models.ParseModeMarkdown,
+		ReplyMarkup: models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
+				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart}},
+			},
+		},
+	})
+	if err != nil {
+		slog.Error("Error sending /trial message", err)
+	}
+}
+
+func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	ctxWithTime, cancel := context.WithTimeout(ctx, 5*time.Second)
+	callback := update.CallbackQuery
+	langCode := callback.From.LanguageCode
+
+	defer cancel()
+	existingCustomer, err := h.customerRepository.FindByTelegramId(ctx, callback.From.ID)
+	if err != nil {
+		slog.Error("error finding customer by telegram id", err)
+	}
+
+	if existingCustomer == nil {
+		existingCustomer, err = h.customerRepository.Create(ctxWithTime, &database.Customer{
+			TelegramID: update.Message.Chat.ID,
+			Language:   langCode,
+		})
+		if err != nil {
+			slog.Error("error creating customer", err)
+			return
+		}
+		slog.Info("user created", "telegramId", update.Message.Chat.ID)
+	} else {
+		updates := map[string]interface{}{
+			"language": langCode,
+		}
+
+		err = h.customerRepository.UpdateFields(ctx, existingCustomer.ID, updates)
+		if err != nil {
+			slog.Error("Error updating customer", err)
+			return
+		}
+	}
+
+	var inlineKeyboard [][]models.InlineKeyboardButton
+
+	if existingCustomer.SubscriptionLink == nil {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "trial_button"), CallbackData: CallbackTrial},
+		})
+	}
+
+	inlineKeyboard = append(inlineKeyboard, [][]models.InlineKeyboardButton{
 		{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
 		{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
-	}
+	}...)
 
 	if config.ServerStatusURL() != "" {
 		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
@@ -161,8 +250,8 @@ func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 		})
 	}
 
-	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{ChatID: callback.Chat.ID,
-		MessageID: callback.ID,
+	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{ChatID: callback.Message.Message.Chat.ID,
+		MessageID: callback.Message.Message.ID,
 		ParseMode: models.ParseModeMarkdown,
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: inlineKeyboard,

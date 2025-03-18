@@ -65,7 +65,7 @@ func (s PaymentService) ProcessPurchaseById(purchaseId int64) error {
 		return fmt.Errorf("customer %s not found", purchase.CustomerID)
 	}
 
-	user, err := s.remnawaveClient.CreateOrUpdateUser(ctx, customer.ID, customer.TelegramID, purchase.Month)
+	user, err := s.remnawaveClient.CreateOrUpdateUser(ctx, customer.ID, customer.TelegramID, config.TrafficLimit(), purchase.Month*30)
 	if err != nil {
 		return err
 	}
@@ -233,4 +233,30 @@ func (s PaymentService) createTelegramInvoice(ctx context.Context, amount int, m
 	}
 
 	return invoiceUrl, nil
+}
+
+func (s PaymentService) ActivateTrial(ctx context.Context, telegramId int64) (string, error) {
+	customer, err := s.customerRepository.FindByTelegramId(ctx, telegramId)
+	if err != nil {
+		slog.Error("Error finding customer", err)
+		return "", err
+	}
+	user, err := s.remnawaveClient.CreateOrUpdateUser(ctx, customer.ID, telegramId, config.TrialTrafficLimit(), config.TrialDays())
+	if err != nil {
+		slog.Error("Error creating user", err)
+		return "", err
+	}
+
+	customerFilesToUpdate := map[string]interface{}{
+		"subscription_link": user.SubscriptionURL,
+		"expire_at":         user.ExpireAt,
+	}
+
+	err = s.customerRepository.UpdateFields(ctx, customer.ID, customerFilesToUpdate)
+	if err != nil {
+		return "", err
+	}
+
+	return user.SubscriptionURL, nil
+
 }

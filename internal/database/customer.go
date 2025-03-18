@@ -133,22 +133,27 @@ func (cr *CustomerRepository) FindByTelegramId(ctx context.Context, telegramId i
 	return &customer, nil
 }
 
-func (cr *CustomerRepository) Create(ctx context.Context, customer *Customer) error {
+func (cr *CustomerRepository) Create(ctx context.Context, customer *Customer) (*Customer, error) {
 	buildInsert := sq.Insert("customer").
 		Columns("telegram_id", "expire_at", "language").
 		PlaceholderFormat(sq.Dollar).
-		Values(customer.TelegramID, customer.ExpireAt, customer.Language)
-
-	sql, arg, err := buildInsert.ToSql()
+		Values(customer.TelegramID, customer.ExpireAt, customer.Language).
+		Suffix("RETURNING id, created_at")
+	sqlStr, args, err := buildInsert.ToSql()
 	if err != nil {
-		return fmt.Errorf("failed to build insert query: %w", err)
+		return nil, fmt.Errorf("failed to build insert query: %w", err)
 	}
 
-	_, err = cr.pool.Exec(ctx, sql, arg...)
-	if err != nil {
-		return fmt.Errorf("failed to insert customer: %w", err)
+	row := cr.pool.QueryRow(ctx, sqlStr, args...)
+	var id int64
+	var createdAt time.Time
+	if err := row.Scan(&id, &createdAt); err != nil {
+		return nil, fmt.Errorf("failed to insert customer: %w", err)
 	}
-	return nil
+	customer.ID = id
+	customer.CreatedAt = createdAt
+
+	return customer, nil
 }
 
 func (cr *CustomerRepository) UpdateFields(ctx context.Context, id int64, updates map[string]interface{}) error {
