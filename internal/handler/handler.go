@@ -126,6 +126,25 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 		})
 	}
 
+	m, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:      update.Message.Chat.ID,
+		Text:        "🧹",
+		ReplyMarkup: models.ReplyKeyboardRemove{},
+	})
+
+	if err != nil {
+		slog.Error("Error sending removing reply keyboard", err)
+	}
+
+	_, err = b.DeleteMessage(ctx, &bot.DeleteMessageParams{
+		ChatID:    update.Message.Chat.ID,
+		MessageID: m.ID,
+	})
+
+	if err != nil {
+		slog.Error("Error deleting message", err)
+	}
+
 	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
 		ParseMode: models.ParseModeMarkdown,
