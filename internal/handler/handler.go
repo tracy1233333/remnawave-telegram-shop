@@ -129,7 +129,9 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 	m, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:      update.Message.Chat.ID,
 		Text:        "🧹",
-		ReplyMarkup: models.ReplyKeyboardRemove{},
+		ReplyMarkup: models.ReplyKeyboardRemove{
+			RemoveKeyboard: true,
+		},
 	})
 
 	if err != nil {
