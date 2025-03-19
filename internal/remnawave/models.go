@@ -104,8 +104,8 @@ type UserCreate struct {
 	TrafficLimitStrategy TrafficLimitStrategy `json:"trafficLimitStrategy,omitempty"`
 	ActiveUserInbounds   []uuid.UUID          `json:"activeUserInbounds,omitempty"`
 	ExpireAt             time.Time            `json:"expireAt,omitempty"`
-	CreatedAt            time.Time            `json:"createdAt,omitempty"`
-	LastTrafficResetAt   time.Time            `json:"lastTrafficResetAt,omitempty"`
+	CreatedAt            *time.Time           `json:"createdAt,omitempty"`
+	LastTrafficResetAt   *time.Time           `json:"lastTrafficResetAt,omitempty"`
 	Description          string               `json:"description,omitempty"`
 	ActivateAllInbounds  bool                 `json:"activateAllInbounds,omitempty"`
 	TelegramId           int64                `json:"telegramId,omitempty"`
