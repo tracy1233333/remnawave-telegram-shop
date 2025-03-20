@@ -24,7 +24,6 @@ type Client struct {
 
 type headerTransport struct {
     base http.RoundTripper
-    token string
 }
 
 func (t *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
