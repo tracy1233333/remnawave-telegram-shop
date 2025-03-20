@@ -9,7 +9,9 @@ import (
 
 type config struct {
 	telegramToken          string
-	price                  int
+	price1                 int
+	price3                 int
+	price6                 int
 	remnawaveUrl           string
 	remnawaveToken         string
 	remnawaveMode          string
@@ -63,8 +65,14 @@ func SupportURL() string {
 func YookasaEmail() string {
 	return conf.yookasaEmail
 }
-func Price() int {
-	return conf.price
+func Price1() int {
+	return conf.price1
+}
+func Price3() int {
+	return conf.price3
+}
+func Price6() int {
+	return conf.price6
 }
 func TelegramToken() string {
 	return conf.telegramToken
@@ -156,15 +164,35 @@ func InitConfig() {
 		panic("TRIAL_DAYS .env variable not set")
 	}
 
-	strPrice := os.Getenv("PRICE")
+	strPrice := os.Getenv("PRICE_1")
 	if strPrice == "" {
-		panic("PRICE .env variable not set")
+		panic("PRICE_1 .env variable not set")
 	}
 	price, err := strconv.Atoi(strPrice)
 	if err != nil {
 		panic(err)
 	}
-	conf.price = price
+	conf.price1 = price
+
+	strPrice3 := os.Getenv("PRICE_3")
+	if strPrice3 == "" {
+		panic("PRICE_3 .env variable not set")
+	}
+	price3, err := strconv.Atoi(strPrice3)
+	if err != nil {
+		panic(err)
+	}
+	conf.price3 = price3
+
+	strPrice6 := os.Getenv("PRICE_6")
+	if strPrice6 == "" {
+		panic("PRICE_6 .env variable not set")
+	}
+	price6, err := strconv.Atoi(strPrice6)
+	if err != nil {
+		panic(err)
+	}
+	conf.price6 = price6
 
 	conf.remnawaveUrl = os.Getenv("REMNAWAVE_URL")
 	if conf.remnawaveUrl == "" {

@@ -23,8 +23,10 @@ purchase and manage subscriptions through Telegram with multiple payment system 
 The application requires the following environment variables to be set:
 
 | Variable                 | Description                                                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | 
-| `PRICE`                  | The base price for the service (default: 1)                                                                          |
+|--------------------------|----------------------------------------------------------------------------------------------------------------------| 
+| `PRICE_1`                | Price for 1 month                                                                                                    |
+| `PRICE_3`                | Price for 3 month                                                                                                    |
+| `PRICE_6`                | Price for 6 month                                                                                                    |
 | `TELEGRAM_TOKEN`         | Telegram Bot API token for bot functionality                                                                         |
 | `DATABASE_URL`           | PostgreSQL connection string                                                                                         |
 | `POSTGRES_USER`          | PostgreSQL username                                                                                                  |
