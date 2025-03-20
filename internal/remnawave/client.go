@@ -85,8 +85,7 @@ func (r *Client) GetUsers(ctx context.Context, pageSize int, start int) (*UsersR
 }
 
 func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, telegramId int64, trafficLimit int64, days int) (*User, error) {
-	username := generateUsername(customerId, telegramId)
-	existingUser, err := r.GetUser(ctx, username)
+	existingUser, err := r.GetUserByTelegramId(ctx, telegramId)
 
 	if err != nil {
 		return nil, err
@@ -233,7 +232,40 @@ func generateUsername(customerId int64, telegramId int64) string {
 	return fmt.Sprintf("%d_%d", customerId, telegramId)
 }
 
-func (r *Client) GetUser(ctx context.Context, username string) (*User, error) {
+func (r *Client) GetUserByTelegramId(ctx context.Context, telegramId int64) (*User, error) {
+	url := fmt.Sprintf("%s/api/users/tg/%d", r.baseURL, telegramId)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+r.token)
+
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var wrapper ResponseWrapper[User]
+	if err := json.NewDecoder(resp.Body).Decode(&wrapper); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &wrapper.Response, nil
+}
+
+func (r *Client) GetUserByUsername(ctx context.Context, username string) (*User, error) {
 	url := fmt.Sprintf("%s/api/users/username/%s", r.baseURL, username)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
