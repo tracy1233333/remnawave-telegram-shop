@@ -23,7 +23,7 @@ purchase and manage subscriptions through Telegram with multiple payment system 
 The application requires the following environment variables to be set:
 
 | Variable                 | Description                                                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | --- |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | 
 | `PRICE`                  | The base price for the service (default: 1)                                                                          |
 | `TELEGRAM_TOKEN`         | Telegram Bot API token for bot functionality                                                                         |
 | `DATABASE_URL`           | PostgreSQL connection string                                                                                         |
@@ -48,7 +48,7 @@ The application requires the following environment variables to be set:
 | `FEEDBACK_URL`           | URL to feedback/reviews page (optional) - if not set, button will not be displayed                                   |
 | `CHANNEL_URL`            | URL to Telegram channel (optional) - if not set, button will not be displayed                                        |
 | `ADMIN_TELEGRAM_ID`      | Admin telegram id                                                                                                    |
-| `TRIAL_TRAFFIC_LIMIT`    | Maximum allowed traffic in gb for trial subscriptions                                                                |     |
+| `TRIAL_TRAFFIC_LIMIT`    | Maximum allowed traffic in gb for trial subscriptions                                                                |     
 | `TRIAL_DAYS`             | Number of days for trial subscriptions                                                                               |
 
 ## User Interface
