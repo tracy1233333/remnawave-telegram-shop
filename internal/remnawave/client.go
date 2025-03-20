@@ -18,15 +18,37 @@ import (
 type Client struct {
 	baseURL    string
 	token      string
+	mode       string
 	httpClient *http.Client
 }
 
-func NewClient(baseURL string, token string) *Client {
-	return &Client{
-		token:      token,
-		baseURL:    baseURL,
-		httpClient: &http.Client{},
-	}
+type headerTransport struct {
+    base http.RoundTripper
+    token string
+}
+
+func (t *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+    req.Header.Set("x-forwarded-for", "127.0.0.1")
+    req.Header.Set("x-forwarded-proto", "https")
+    return t.base.RoundTrip(req)
+}
+
+func NewClient(baseURL string, token string, mode string) *Client {
+	client := &http.Client{}
+    
+    if mode == "local" {
+        client.Transport = &headerTransport{
+            base: http.DefaultTransport,
+        }
+    }
+
+
+    return &Client{
+        token:      token,
+        baseURL:    baseURL,
+        mode:       mode,
+        httpClient: client,
+    }
 }
 
 func (r *Client) GetUsers(ctx context.Context, pageSize int, start int) (*UsersResponse, error) {

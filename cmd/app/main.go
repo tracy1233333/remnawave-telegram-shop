@@ -52,7 +52,7 @@ func main() {
 	purchaseRepository := database.NewPurchaseRepository(pool)
 
 	cryptoPayClient := cryptopay.NewCryptoPayClient(config.CryptoPayUrl(), config.CryptoPayToken())
-	remnawaveClient := remnawave.NewClient(config.RemnawaveUrl(), config.RemnawaveToken())
+	remnawaveClient := remnawave.NewClient(config.RemnawaveUrl(), config.RemnawaveToken(), config.RemnawaveMode())
 	initCountries(ctx, remnawaveClient)
 	yookasaClient := yookasa.NewClient(config.YookasaUrl(), config.YookasaShopId(), config.YookasaSecretKey())
 	b, err := bot.New(config.TelegramToken(), bot.WithWorkers(3))

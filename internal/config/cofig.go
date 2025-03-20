@@ -12,6 +12,7 @@ type config struct {
 	price                  int
 	remnawaveUrl           string
 	remnawaveToken         string
+	remnawaveMode          string
 	databaseURL            string
 	cryptoPayURL           string
 	cryptoPayToken         string
@@ -76,7 +77,9 @@ func DadaBaseUrl() string {
 }
 func RemnawaveToken() string {
 	return conf.remnawaveToken
-
+}
+func RemnawaveMode() string {
+	return conf.remnawaveMode
 }
 func CryptoPayUrl() string {
 	return conf.cryptoPayURL
@@ -166,6 +169,13 @@ func InitConfig() {
 	conf.remnawaveUrl = os.Getenv("REMNAWAVE_URL")
 	if conf.remnawaveUrl == "" {
 		panic("REMNAWAVE_URL .env variable not set")
+	}
+
+	conf.remnawaveMode = os.Getenv("REMNAWAVE_MODE")
+	if conf.remnawaveMode == "" {
+		conf.remnawaveMode = "remote"
+	} else if conf.remnawaveMode != "remote" && conf.remnawaveMode != "local" {
+		panic("REMNAWAVE_MODE .env variable must be either 'remote' or 'local'")
 	}
 
 	conf.remnawaveToken = os.Getenv("REMNAWAVE_TOKEN")
