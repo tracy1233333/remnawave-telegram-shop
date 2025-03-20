@@ -303,8 +303,7 @@ func checkCryptoPayInvoice(
 
 	for _, invoice := range *invoices {
 		if invoice.InvoiceID != nil && invoice.IsPaid() {
-			purchaseParam := strings.Split(invoice.Payload, "&")[1]
-			purchaseID, err := strconv.Atoi(strings.Split(purchaseParam, "=")[1])
+			purchaseID, err := strconv.Atoi(strings.Split(invoice.Payload, "=")[1])
 			err = paymentService.ProcessPurchaseById(int64(purchaseID))
 			if err != nil {
 				slog.Error("Error processing invoice", "invoiceId", invoice.InvoiceID, err)

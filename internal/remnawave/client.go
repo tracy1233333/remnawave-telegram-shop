@@ -23,31 +23,30 @@ type Client struct {
 }
 
 type headerTransport struct {
-    base http.RoundTripper
+	base http.RoundTripper
 }
 
 func (t *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-    req.Header.Set("x-forwarded-for", "127.0.0.1")
-    req.Header.Set("x-forwarded-proto", "https")
-    return t.base.RoundTrip(req)
+	req.Header.Set("x-forwarded-for", "127.0.0.1")
+	req.Header.Set("x-forwarded-proto", "https")
+	return t.base.RoundTrip(req)
 }
 
 func NewClient(baseURL string, token string, mode string) *Client {
 	client := &http.Client{}
-    
-    if mode == "local" {
-        client.Transport = &headerTransport{
-            base: http.DefaultTransport,
-        }
-    }
 
+	if mode == "local" {
+		client.Transport = &headerTransport{
+			base: http.DefaultTransport,
+		}
+	}
 
-    return &Client{
-        token:      token,
-        baseURL:    baseURL,
-        mode:       mode,
-        httpClient: client,
-    }
+	return &Client{
+		token:      token,
+		baseURL:    baseURL,
+		mode:       mode,
+		httpClient: client,
+	}
 }
 
 func (r *Client) GetUsers(ctx context.Context, pageSize int, start int) (*UsersResponse, error) {
@@ -257,12 +256,12 @@ func (r *Client) GetUserByTelegramId(ctx context.Context, telegramId int64) (*Us
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var wrapper ResponseWrapper[User]
+	var wrapper ResponseWrapper[[]User]
 	if err := json.NewDecoder(resp.Body).Decode(&wrapper); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &wrapper.Response, nil
+	return &wrapper.Response[0], nil
 }
 
 func (r *Client) GetUserByUsername(ctx context.Context, username string) (*User, error) {
