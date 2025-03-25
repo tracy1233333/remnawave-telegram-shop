@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"remnawave-tg-shop-bot/internal/config"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -134,27 +136,42 @@ func (c *Client) CreatePayment(ctx context.Context, request PaymentRequest, idem
 func (c *Client) GetPayment(ctx context.Context, paymentID uuid.UUID) (*Payment, error) {
 	paymentURL := fmt.Sprintf("%s/payments/%s", c.baseURL, paymentID)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", paymentURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
+	var payment *Payment
 
-	req.Header.Set("Authorization", c.authHeader)
+	maxRetries := 5
+	baseDelay := time.Second
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, "GET", paymentURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
 
-	if resp.StatusCode != http.StatusOK {
+		req.Header.Set("Authorization", c.authHeader)
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to send request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			payment = new(Payment)
+			if err := json.NewDecoder(resp.Body).Decode(payment); err != nil {
+				return nil, fmt.Errorf("failed to decode response: %w", err)
+			}
+			return payment, nil
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			retryDelay := baseDelay * time.Duration(1<<attempt)
+			log.Printf("Received 429 Too Many Requests. Retrying in %v...", retryDelay)
+			time.Sleep(retryDelay)
+			continue
+		}
+
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var payment Payment
-	if err := json.NewDecoder(resp.Body).Decode(&payment); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return &payment, nil
+	return nil, fmt.Errorf("exceeded maximum retries due to 429 Too Many Requests")
 }

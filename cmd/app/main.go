@@ -244,6 +244,7 @@ func checkYookasaInvoice(
 
 		if err != nil {
 			slog.Error("Error getting invoice", "invoiceId", purchase.YookasaID, err)
+			continue
 		}
 		if !invoice.Paid {
 			continue
