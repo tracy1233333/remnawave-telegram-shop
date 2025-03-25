@@ -246,9 +246,15 @@ func checkYookasaInvoice(
 			slog.Error("Error getting invoice", "invoiceId", purchase.YookasaID, err)
 			continue
 		}
-		if !invoice.Paid {
+
+		if invoice.IsCancelled() {
+			err := paymentService.CancelPayment(purchase.ID)
+			if err != nil {
+				slog.Error("Error canceling invoice", "invoiceId", invoice.ID, "purchaseId", purchase.ID, err)
+			}
 			continue
 		}
+
 		purchaseId, err := strconv.Atoi(invoice.Metadata["purchaseId"])
 		if err != nil {
 			slog.Error("Error parsing purchaseId", "invoiceId", invoice.ID, err)

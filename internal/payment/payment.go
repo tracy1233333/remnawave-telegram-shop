@@ -260,3 +260,26 @@ func (s PaymentService) ActivateTrial(ctx context.Context, telegramId int64) (st
 	return user.SubscriptionURL, nil
 
 }
+
+func (s PaymentService) CancelPayment(purchaseId int64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	purchase, err := s.purchaseRepository.FindById(ctx, purchaseId)
+	if err != nil {
+		return err
+	}
+	if purchase == nil {
+		return fmt.Errorf("purchase with crypto invoice id %d not found", purchaseId)
+	}
+
+	purchaseFieldsToUpdate := map[string]interface{}{
+		"status": database.PurchaseStatusCancel,
+	}
+
+	err = s.purchaseRepository.UpdateFields(ctx, purchaseId, purchaseFieldsToUpdate)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
