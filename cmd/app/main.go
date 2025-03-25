@@ -255,6 +255,10 @@ func checkYookasaInvoice(
 			continue
 		}
 
+		if !invoice.Paid {
+			continue
+		}
+
 		purchaseId, err := strconv.Atoi(invoice.Metadata["purchaseId"])
 		if err != nil {
 			slog.Error("Error parsing purchaseId", "invoiceId", invoice.ID, err)
