@@ -44,7 +44,7 @@ type UserUpdate struct {
 	UUID                 string               `json:"uuid"`
 	Status               Status               `json:"status,omitempty"`
 	TrafficLimitBytes    int64                `json:"trafficLimitBytes"`
-	TrafficLimitStrategy TrafficLimitStrategy `json:"trafficLimitStrategy,omitempty"`
+	TrafficLimitStrategy TrafficLimitStrategy `json:"trafficLimitStrategy"`
 	ActiveUserInbounds   []string             `json:"activeUserInbounds,omitempty"`
 	ExpireAt             time.Time            `json:"expireAt,omitempty"`
 	Description          string               `json:"description,omitempty"`
