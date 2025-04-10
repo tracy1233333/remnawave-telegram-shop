@@ -17,6 +17,7 @@ purchase and manage subscriptions through Telegram with multiple payment system 
 - **Subscription Notifications**: The bot automatically sends notifications to users 3 days before their subscription
   expires, helping them avoid service interruption
 - Multi-language support (Russian and English)
+- **Inbound Filtering**: Configure which specific inbound types users will have access to
 
 ## Environment Variables
 
@@ -35,6 +36,7 @@ The application requires the following environment variables to be set:
 | `REMNAWAVE_URL`          | Remnawave API URL                                                                                                    |
 | `REMNAWAVE_MODE`         | Remnawave mode (remote/local), default is remote. If local set – you can pass http://remnawave:3000 to REMNAWAVE_URL |
 | `REMNAWAVE_TOKEN`        | Authentication token for Remnawave API                                                                               |
+| `INBOUND_TAGS`           | Optional comma-separated list of inbound tags to filter which inbounds users will have access to                      |
 | `CRYPTO_PAY_ENABLED`     | Enable/disable CryptoPay payment method (true/false)                                                                 |
 | `CRYPTO_PAY_TOKEN`       | CryptoPay API token                                                                                                  |
 | `CRYPTO_PAY_URL`         | CryptoPay API URL                                                                                                    |
@@ -68,6 +70,14 @@ The bot includes a notification system that runs daily at 16:00 UTC to check for
 - Users receive a notification 3 days before their subscription expires
 - The notification includes the exact expiration date and a convenient button to renew the subscription
 - Notifications are sent in the user's preferred language
+
+## Inbound Configuration
+
+The `INBOUND_TAGS` environment variable allows you to specify which inbounds will be assigned to users:
+
+- If not set, all available inbounds will be assigned to users
+- If set, only the specified inbounds will be assigned (comma-separated list of tags)
+- Example: `INBOUND_TAGS=VLESS_TCP_REALITY,VLESS_XHTTP_REALITY`
 
 ## Plugins and Dependencies
 
