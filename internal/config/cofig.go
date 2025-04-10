@@ -1,10 +1,12 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 type config struct {
@@ -35,9 +37,15 @@ type config struct {
 	adminTelegramId        int64
 	trialDays              int
 	trialTrafficLimit      int64
+	inboundTags            []string // Новое поле для хранения тегов inbounds
 }
 
 var conf config
+
+// InboundTags возвращает список тегов inbounds, которые должны быть назначены пользователю
+func InboundTags() []string {
+	return conf.inboundTags
+}
 
 func TrialTrafficLimit() int64 {
 	return conf.trialTrafficLimit * bytesInGigabyte
@@ -255,6 +263,22 @@ func InitConfig() {
 		panic(err)
 	}
 	conf.trafficLimit = int64(limit)
+
+	// Инициализация списка inboundTags из переменной окружения
+	inboundTagsStr := os.Getenv("INBOUND_TAGS")
+	if inboundTagsStr != "" {
+		// Разделяем теги по запятой и удаляем пробелы
+		tags := strings.Split(inboundTagsStr, ",")
+		for i := range tags {
+			tags[i] = strings.TrimSpace(tags[i])
+		}
+		conf.inboundTags = tags
+		slog.Info("Loaded inbound tags from env", "tags", conf.inboundTags)
+	} else {
+		// Если переменная не задана, будут использоваться все доступные inbounds
+		slog.Info("INBOUND_TAGS not set, all available inbounds will be used")
+		conf.inboundTags = []string{}
+	}
 
 	conf.serverStatusURL = os.Getenv("SERVER_STATUS_URL")
 	conf.supportURL = os.Getenv("SUPPORT_URL")
