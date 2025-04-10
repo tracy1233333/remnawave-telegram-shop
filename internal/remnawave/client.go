@@ -464,38 +464,39 @@ func (r *Client) getInbounds(ctx context.Context) *[]Inbound {
 		return nil
 	}
 
-	configTags := config.InboundTags()
+	// Получаем список UUID для фильтрации
+	configUUIDs := config.InboundUUIDs()
 	
-	// Если теги не указаны в конфигурации, возвращаем все инбаунды
-	if len(configTags) == 0 {
-		slog.Info("No inbound tags filter set, using all inbounds")
+	// Если UUID не указаны в конфигурации, возвращаем все инбаунды
+	if len(configUUIDs) == 0 {
+		slog.Info("No inbound UUID filter set, using all inbounds")
 		return &wrapper.Response
 	}
 
-	// Создаем мапу тегов для быстрого поиска
-	tagsMap := make(map[string]bool)
-	for _, tag := range configTags {
-		tagsMap[tag] = true
+	// Создаем мапу UUID для быстрого поиска
+	uuidsMap := make(map[string]bool)
+	for _, uuid := range configUUIDs {
+		uuidsMap[uuid] = true
 	}
 
-	// Фильтруем инбаунды по тегам
+	// Фильтруем инбаунды по UUID
 	filteredInbounds := []Inbound{}
 	for _, inbound := range wrapper.Response {
-		if tagsMap[inbound.Tag] {
+		if uuidsMap[inbound.UUID.String()] {
 			filteredInbounds = append(filteredInbounds, inbound)
 		}
 	}
 
 	if len(filteredInbounds) == 0 {
-		slog.Warn("No inbounds match the configured tags, falling back to all inbounds", 
-			"configuredTags", configTags)
+		slog.Warn("No inbounds match the configured UUIDs, falling back to all inbounds", 
+			"configuredUUIDs", configUUIDs)
 		return &wrapper.Response
 	}
 
-	slog.Info("Filtered inbounds by tags", 
+	slog.Info("Filtered inbounds by UUIDs", 
 		"totalInbounds", len(wrapper.Response), 
 		"filteredInbounds", len(filteredInbounds),
-		"usedTags", configTags)
+		"usedUUIDs", configUUIDs)
 	
 	return &filteredInbounds
 }
