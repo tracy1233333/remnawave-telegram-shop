@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"log/slog"
 	"net"
 	"net/http"
 	"remnawave-tg-shop-bot/internal/config"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Client struct {
@@ -443,6 +444,7 @@ func (r *Client) getInbounds(ctx context.Context) *[]Inbound {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, config.RemnawaveUrl()+"/api/inbounds", nil)
 	if err != nil {
 		slog.Error("Error while creating create request: %v", err)
+		return nil
 	}
 	httpReq.Header.Set("Accept", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+r.token)
@@ -450,6 +452,7 @@ func (r *Client) getInbounds(ctx context.Context) *[]Inbound {
 	resp, err := r.httpClient.Do(httpReq)
 	if err != nil {
 		slog.Error("Error while making get inbounds request: %v", err)
+		return nil
 	}
 	defer resp.Body.Close()
 
@@ -464,6 +467,34 @@ func (r *Client) getInbounds(ctx context.Context) *[]Inbound {
 		return nil
 	}
 
-	return &wrapper.Response
+	// Если нет специфичных тегов для фильтрации, возвращаем все inbounds
+	configuredTags := config.InboundTags()
+	if len(configuredTags) == 0 {
+		return &wrapper.Response
+	}
 
+	// Фильтруем inbounds по тегам из конфигурации
+	var filteredInbounds []Inbound
+	tagsMap := make(map[string]struct{})
+
+	// Создаем карту для быстрого поиска
+	for _, tag := range configuredTags {
+		tagsMap[tag] = struct{}{}
+	}
+
+	// Фильтрация входящих соединений по тегам
+	for _, inbound := range wrapper.Response {
+		if _, exists := tagsMap[inbound.Tag]; exists {
+			filteredInbounds = append(filteredInbounds, inbound)
+			slog.Debug("Including inbound", "tag", inbound.Tag, "uuid", inbound.UUID)
+		}
+	}
+
+	if len(filteredInbounds) == 0 {
+		slog.Warn("No matching inbounds found for configured tags", "configuredTags", configuredTags)
+		return &wrapper.Response // Возвращаем все, если ни один не совпал
+	}
+
+	slog.Info("Filtered inbounds", "total", len(wrapper.Response), "filtered", len(filteredInbounds))
+	return &filteredInbounds
 }
