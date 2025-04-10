@@ -1,12 +1,11 @@
 package config
 
 import (
+	"github.com/joho/godotenv"
 	"log/slog"
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/joho/godotenv"
 )
 
 type config struct {
@@ -37,12 +36,33 @@ type config struct {
 	adminTelegramId        int64
 	trialDays              int
 	trialTrafficLimit      int64
-	inboundTags            []string // Новое поле для хранения тегов inbounds
+	inboundTags            []string // Массив тегов для фильтрации inbounds
+	allowedCountries       []string // Добавлено: массив кодов стран для фильтрации
 }
 
 var conf config
 
-// InboundTags возвращает список тегов inbounds, которые должны быть назначены пользователю
+// Добавлена функция получения списка разрешенных стран
+func AllowedCountries() []string {
+	return conf.allowedCountries
+}
+
+// Добавлена функция проверки, разрешена ли страна
+func IsCountryAllowed(countryCode string) bool {
+	// Если список разрешенных стран пуст, разрешены все страны
+	if len(conf.allowedCountries) == 0 {
+		return true
+	}
+	
+	// Проверяем наличие кода страны в списке разрешенных
+	for _, code := range conf.allowedCountries {
+		if code == countryCode {
+			return true
+		}
+	}
+	return false
+}
+
 func InboundTags() []string {
 	return conf.inboundTags
 }
@@ -264,25 +284,38 @@ func InitConfig() {
 	}
 	conf.trafficLimit = int64(limit)
 
-	// Инициализация списка inboundTags из переменной окружения
-	inboundTagsStr := os.Getenv("INBOUND_TAGS")
-	if inboundTagsStr != "" {
-		// Разделяем теги по запятой и удаляем пробелы
-		tags := strings.Split(inboundTagsStr, ",")
-		for i := range tags {
-			tags[i] = strings.TrimSpace(tags[i])
-		}
-		conf.inboundTags = tags
-		slog.Info("Loaded inbound tags from env", "tags", conf.inboundTags)
-	} else {
-		// Если переменная не задана, будут использоваться все доступные inbounds
-		slog.Info("INBOUND_TAGS not set, all available inbounds will be used")
-		conf.inboundTags = []string{}
-	}
-
 	conf.serverStatusURL = os.Getenv("SERVER_STATUS_URL")
 	conf.supportURL = os.Getenv("SUPPORT_URL")
 	conf.feedbackURL = os.Getenv("FEEDBACK_URL")
 	conf.channelURL = os.Getenv("CHANNEL_URL")
 
+	// Добавлена обработка переменной INBOUND_TAGS
+	inboundTagsStr := os.Getenv("INBOUND_TAGS")
+	if inboundTagsStr != "" {
+		// Разбиваем строку с тегами по запятой и удаляем лишние пробелы
+		tags := strings.Split(inboundTagsStr, ",")
+		for i := range tags {
+			tags[i] = strings.TrimSpace(tags[i])
+		}
+		conf.inboundTags = tags
+		slog.Info("Loaded inbound tags", "tags", conf.inboundTags)
+	} else {
+		conf.inboundTags = []string{} // Пустой массив, если теги не указаны
+		slog.Info("No inbound tags specified, all will be used")
+	}
+
+	// Добавлена обработка переменной ALLOWED_COUNTRIES
+	allowedCountriesStr := os.Getenv("ALLOWED_COUNTRIES")
+	if allowedCountriesStr != "" {
+		// Разбиваем строку с кодами стран по запятой и удаляем лишние пробелы
+		countries := strings.Split(allowedCountriesStr, ",")
+		for i := range countries {
+			countries[i] = strings.TrimSpace(countries[i])
+		}
+		conf.allowedCountries = countries
+		slog.Info("Loaded allowed countries", "countries", conf.allowedCountries)
+	} else {
+		conf.allowedCountries = []string{} // Пустой массив, если страны не указаны
+		slog.Info("No country restrictions, all countries will be shown")
+	}
 }
