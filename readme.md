@@ -17,7 +17,8 @@ purchase and manage subscriptions through Telegram with multiple payment system 
 - **Subscription Notifications**: The bot automatically sends notifications to users 3 days before their subscription
   expires, helping them avoid service interruption
 - Multi-language support (Russian and English)
-- **Inbound Filtering**: Configure which specific inbound types users will have access to
+- **Selective Inbound Assignment**: Configure specific inbounds to assign to users via tag filtering
+- **Country Filtering**: Configure which countries are displayed to users in the bot interface
 
 ## Environment Variables
 
@@ -36,7 +37,6 @@ The application requires the following environment variables to be set:
 | `REMNAWAVE_URL`          | Remnawave API URL                                                                                                    |
 | `REMNAWAVE_MODE`         | Remnawave mode (remote/local), default is remote. If local set – you can pass http://remnawave:3000 to REMNAWAVE_URL |
 | `REMNAWAVE_TOKEN`        | Authentication token for Remnawave API                                                                               |
-| `INBOUND_TAGS`           | Optional comma-separated list of inbound tags to filter which inbounds users will have access to                      |
 | `CRYPTO_PAY_ENABLED`     | Enable/disable CryptoPay payment method (true/false)                                                                 |
 | `CRYPTO_PAY_TOKEN`       | CryptoPay API token                                                                                                  |
 | `CRYPTO_PAY_URL`         | CryptoPay API URL                                                                                                    |
@@ -54,6 +54,8 @@ The application requires the following environment variables to be set:
 | `ADMIN_TELEGRAM_ID`      | Admin telegram id                                                                                                    |
 | `TRIAL_TRAFFIC_LIMIT`    | Maximum allowed traffic in gb for trial subscriptions                                                                |     
 | `TRIAL_DAYS`             | Number of days for trial subscriptions                                                                               |
+| `INBOUND_TAGS`           | Comma-separated list of inbound tags to assign to users (e.g., "VLESS_TCP_REALITY,VLESS_XHTTP_REALITY")              |
+| `ALLOWED_COUNTRIES`      | Comma-separated list of country codes to show to users (e.g., "US,NL,DE,FR,SG")                                      |
 
 ## User Interface
 
@@ -73,11 +75,22 @@ The bot includes a notification system that runs daily at 16:00 UTC to check for
 
 ## Inbound Configuration
 
-The `INBOUND_TAGS` environment variable allows you to specify which inbounds will be assigned to users:
+The bot supports selective inbound assignment to users:
 
-- If not set, all available inbounds will be assigned to users
-- If set, only the specified inbounds will be assigned (comma-separated list of tags)
-- Example: `INBOUND_TAGS=VLESS_TCP_REALITY,VLESS_XHTTP_REALITY`
+- Configure specific inbound tags in the `INBOUND_TAGS` environment variable (comma-separated)
+- If specified, only inbounds with matching tags will be assigned to new users
+- If no inbounds match the specified tags or the variable is empty, all available inbounds will be assigned
+- This feature allows fine-grained control over which connection methods are available to users
+
+## Country Configuration
+
+The bot supports filtering which countries are displayed to users:
+
+- Configure specific country codes in the `ALLOWED_COUNTRIES` environment variable (comma-separated)
+- If specified, only countries with matching codes will be shown to users
+- If no countries match the specified codes or the variable is empty, all available countries will be shown
+- This feature allows you to limit which VPN locations are displayed to users
+- Country codes should be specified in ISO standard format (e.g., US, NL, DE, FR, SG)
 
 ## Plugins and Dependencies
 
