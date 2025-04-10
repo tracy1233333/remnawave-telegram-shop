@@ -36,7 +36,7 @@ type config struct {
 	adminTelegramId        int64
 	trialDays              int
 	trialTrafficLimit      int64
-	inboundTags            []string // Массив тегов для фильтрации inbounds
+	inboundUUIDs           []string // Изменено: UUID вместо тегов для фильтрации inbounds
 	allowedCountries       []string // Добавлено: массив кодов стран для фильтрации
 }
 
@@ -63,8 +63,9 @@ func IsCountryAllowed(countryCode string) bool {
 	return false
 }
 
-func InboundTags() []string {
-	return conf.inboundTags
+// Изменено: Функция для получения UUID инбаундов вместо тегов
+func InboundUUIDs() []string {
+	return conf.inboundUUIDs
 }
 
 func TrialTrafficLimit() int64 {
@@ -289,19 +290,19 @@ func InitConfig() {
 	conf.feedbackURL = os.Getenv("FEEDBACK_URL")
 	conf.channelURL = os.Getenv("CHANNEL_URL")
 
-	// Добавлена обработка переменной INBOUND_TAGS
-	inboundTagsStr := os.Getenv("INBOUND_TAGS")
-	if inboundTagsStr != "" {
-		// Разбиваем строку с тегами по запятой и удаляем лишние пробелы
-		tags := strings.Split(inboundTagsStr, ",")
-		for i := range tags {
-			tags[i] = strings.TrimSpace(tags[i])
+	// Изменена обработка переменной INBOUND_UUIDS вместо INBOUND_TAGS
+	inboundUUIDsStr := os.Getenv("INBOUND_UUIDS")
+	if inboundUUIDsStr != "" {
+		// Разбиваем строку с UUID по запятой и удаляем лишние пробелы
+		uuids := strings.Split(inboundUUIDsStr, ",")
+		for i := range uuids {
+			uuids[i] = strings.TrimSpace(uuids[i])
 		}
-		conf.inboundTags = tags
-		slog.Info("Loaded inbound tags", "tags", conf.inboundTags)
+		conf.inboundUUIDs = uuids
+		slog.Info("Loaded inbound UUIDs", "uuids", conf.inboundUUIDs)
 	} else {
-		conf.inboundTags = []string{} // Пустой массив, если теги не указаны
-		slog.Info("No inbound tags specified, all will be used")
+		conf.inboundUUIDs = []string{} // Пустой массив, если UUID не указаны
+		slog.Info("No inbound UUIDs specified, all will be used")
 	}
 
 	// Добавлена обработка переменной ALLOWED_COUNTRIES
