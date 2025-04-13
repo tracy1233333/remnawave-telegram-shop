@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type config struct {
@@ -35,9 +36,37 @@ type config struct {
 	adminTelegramId        int64
 	trialDays              int
 	trialTrafficLimit      int64
+	inboundUUIDs           []string // Изменено: UUID вместо тегов для фильтрации inbounds
+	allowedCountries       []string // Добавлено: массив кодов стран для фильтрации
 }
 
 var conf config
+
+// Добавлена функция получения списка разрешенных стран
+func AllowedCountries() []string {
+	return conf.allowedCountries
+}
+
+// Добавлена функция проверки, разрешена ли страна
+func IsCountryAllowed(countryCode string) bool {
+	// Если список разрешенных стран пуст, разрешены все страны
+	if len(conf.allowedCountries) == 0 {
+		return true
+	}
+	
+	// Проверяем наличие кода страны в списке разрешенных
+	for _, code := range conf.allowedCountries {
+		if code == countryCode {
+			return true
+		}
+	}
+	return false
+}
+
+// Изменено: Функция для получения UUID инбаундов вместо тегов
+func InboundUUIDs() []string {
+	return conf.inboundUUIDs
+}
 
 func TrialTrafficLimit() int64 {
 	return conf.trialTrafficLimit * bytesInGigabyte
@@ -261,4 +290,33 @@ func InitConfig() {
 	conf.feedbackURL = os.Getenv("FEEDBACK_URL")
 	conf.channelURL = os.Getenv("CHANNEL_URL")
 
+	// Изменена обработка переменной INBOUND_UUIDS вместо INBOUND_TAGS
+	inboundUUIDsStr := os.Getenv("INBOUND_UUIDS")
+	if inboundUUIDsStr != "" {
+		// Разбиваем строку с UUID по запятой и удаляем лишние пробелы
+		uuids := strings.Split(inboundUUIDsStr, ",")
+		for i := range uuids {
+			uuids[i] = strings.TrimSpace(uuids[i])
+		}
+		conf.inboundUUIDs = uuids
+		slog.Info("Loaded inbound UUIDs", "uuids", conf.inboundUUIDs)
+	} else {
+		conf.inboundUUIDs = []string{} // Пустой массив, если UUID не указаны
+		slog.Info("No inbound UUIDs specified, all will be used")
+	}
+
+	// Добавлена обработка переменной ALLOWED_COUNTRIES
+	allowedCountriesStr := os.Getenv("ALLOWED_COUNTRIES")
+	if allowedCountriesStr != "" {
+		// Разбиваем строку с кодами стран по запятой и удаляем лишние пробелы
+		countries := strings.Split(allowedCountriesStr, ",")
+		for i := range countries {
+			countries[i] = strings.TrimSpace(countries[i])
+		}
+		conf.allowedCountries = countries
+		slog.Info("Loaded allowed countries", "countries", conf.allowedCountries)
+	} else {
+		conf.allowedCountries = []string{} // Пустой массив, если страны не указаны
+		slog.Info("No country restrictions, all countries will be shown")
+	}
 }
