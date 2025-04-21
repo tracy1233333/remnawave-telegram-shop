@@ -31,15 +31,16 @@ type config struct {
 	channelURL             string
 	serverStatusURL        string
 	supportURL             string
-	tosURL				   string
+	tosURL                 string
 	isYookasaEnabled       bool
 	isCryptoEnabled        bool
 	isTelegramStarsEnabled bool
 	adminTelegramId        int64
 	trialDays              int
 	trialTrafficLimit      int64
-	inboundUUIDs           []string // Изменено: UUID вместо тегов для фильтрации inbounds
-	allowedCountries       []string // Добавлено: массив кодов стран для фильтрации
+	inboundUUIDs           []string
+	allowedCountries       []string
+	referralDays           int
 }
 
 var conf config
@@ -49,13 +50,17 @@ func AllowedCountries() []string {
 	return conf.allowedCountries
 }
 
+func GetReferralDays() int {
+	return conf.referralDays
+}
+
 // Добавлена функция проверки, разрешена ли страна
 func IsCountryAllowed(countryCode string) bool {
 	// Если список разрешенных стран пуст, разрешены все страны
 	if len(conf.allowedCountries) == 0 {
 		return true
 	}
-	
+
 	// Проверяем наличие кода страны в списке разрешенных
 	for _, code := range conf.allowedCountries {
 		if code == countryCode {
@@ -303,6 +308,11 @@ func InitConfig() {
 		panic(err)
 	}
 	conf.trafficLimit = int64(limit)
+
+	conf.referralDays, err = strconv.Atoi(os.Getenv("REFERRAL_DAYS"))
+	if err != nil {
+		panic("REFERRAL_DAYS .env variable not set")
+	}
 
 	conf.serverStatusURL = os.Getenv("SERVER_STATUS_URL")
 	conf.supportURL = os.Getenv("SUPPORT_URL")
