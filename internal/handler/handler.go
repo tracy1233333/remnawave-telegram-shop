@@ -400,7 +400,7 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 
 	if config.IsTelegramStarsEnabled() {
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
-			{Text: "⭐Telegram Stars", CallbackData: fmt.Sprintf("%s?month=%s&invoiceType=%s&amount=%s", CallbackPayment, month, database.InvoiceTypeTelegram, amount)},
+			{Text: h.translation.GetText(langCode, "stars_button"), CallbackData: fmt.Sprintf("%s?month=%s&invoiceType=%s&amount=%s", CallbackPayment, month, database.InvoiceTypeTelegram, amount)},
 		})
 	}
 
