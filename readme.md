@@ -142,4 +142,4 @@ consider donating. Your support helps drive future updates and improvements.
 
 **Donation Methods:**
 
-- **BNB USDT:** `bnb1hjfwwtk5cqq39kvyts49hsxv60988dy0z2nlmh`
+- **Bep20 USDT:** `0x4D1ee2445fdC88fA49B9d02FB8ee3633f45Bef48`
