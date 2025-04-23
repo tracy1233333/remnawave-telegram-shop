@@ -152,8 +152,19 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 
 	inlineKeyboard = append(inlineKeyboard, [][]models.InlineKeyboardButton{
 		{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
-		{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
 	}...)
+
+	if config.GetMiniAppURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "connect_button"), WebApp: &models.WebAppInfo{
+				URL: config.GetMiniAppURL(),
+			}},
+		})
+	} else {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"},
+		})
+	}
 
 	if config.GetReferralDays() > 0 {
 		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
@@ -315,8 +326,19 @@ func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 
 	inlineKeyboard = append(inlineKeyboard, [][]models.InlineKeyboardButton{
 		{{Text: h.translation.GetText(langCode, "buy_button"), CallbackData: "buy"}},
-		{{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"}},
 	}...)
+
+	if config.GetMiniAppURL() != "" {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "connect_button"), WebApp: &models.WebAppInfo{
+				URL: config.GetMiniAppURL(),
+			}},
+		})
+	} else {
+		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "connect_button"), CallbackData: "connect"},
+		})
+	}
 
 	if config.GetReferralDays() > 0 {
 		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
