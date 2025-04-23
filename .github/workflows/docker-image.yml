@@ -39,8 +39,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
+  send-notification:
+    needs: build-docker-image
+    runs-on: ubuntu-latest
+    steps:
       - name: Send Telegram notification
-        if: success()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -49,3 +52,4 @@ jobs:
             ✅ Build finished.
             🛠️ ${{ github.ref_name }}
             🔨 Commit Message: ${{ github.event.head_commit.message }}
+
