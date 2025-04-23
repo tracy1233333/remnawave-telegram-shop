@@ -142,4 +142,4 @@ consider donating. Your support helps drive future updates and improvements.
 
 **Donation Methods:**
 
-- **Ethereum:** `0xd6d35119f8EE2a54Df344E4812A47e1C348ADE1c`
+- **BNB USDT:** `bnb1hjfwwtk5cqq39kvyts49hsxv60988dy0z2nlmh`

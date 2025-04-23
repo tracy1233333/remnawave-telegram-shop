@@ -391,7 +391,10 @@ func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *mod
 
 	keyboard := [][]models.InlineKeyboardButton{}
 
-	if len(priceButtons) > 0 {
+	if len(priceButtons) == 4 {
+		keyboard = append(keyboard, priceButtons[:2])
+		keyboard = append(keyboard, priceButtons[2:])
+	} else if len(priceButtons) > 0 {
 		keyboard = append(keyboard, priceButtons)
 	}
 
@@ -413,7 +416,6 @@ func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *mod
 		slog.Error("Error sending buy message", err)
 	}
 }
-
 func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	callback := update.CallbackQuery.Message.Message
 	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
