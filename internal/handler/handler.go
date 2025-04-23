@@ -138,7 +138,7 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 
 	var inlineKeyboard [][]models.InlineKeyboardButton
 
-	if existingCustomer.SubscriptionLink == nil {
+	if existingCustomer.SubscriptionLink == nil && config.TrialDays() > 0 {
 		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
 			{Text: h.translation.GetText(langCode, "trial_button"), CallbackData: CallbackTrial},
 		})
@@ -290,7 +290,7 @@ func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 
 	var inlineKeyboard [][]models.InlineKeyboardButton
 
-	if existingCustomer.SubscriptionLink == nil {
+	if existingCustomer.SubscriptionLink == nil && config.TrialDays() > 0 {
 		inlineKeyboard = append(inlineKeyboard, []models.InlineKeyboardButton{
 			{Text: h.translation.GetText(langCode, "trial_button"), CallbackData: CallbackTrial},
 		})
