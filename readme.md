@@ -129,6 +129,7 @@ The bot supports filtering which countries are displayed to users:
    ```bash
    docker compose pull
    ```
+   
 
 2. Restart the containers:
    ```bash
