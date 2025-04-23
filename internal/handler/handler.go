@@ -220,6 +220,9 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 }
 
 func (h Handler) TrialCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if config.TrialDays() == 0 {
+		return
+	}
 	callback := update.CallbackQuery.Message.Message
 	langCode := update.CallbackQuery.From.LanguageCode
 	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
