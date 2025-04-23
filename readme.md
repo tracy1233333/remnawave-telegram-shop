@@ -135,6 +135,7 @@ The bot supports filtering which countries are displayed to users:
    docker compose down && docker compose up -d
    ```
 
+
 ## Donations
 
 If you appreciate this project and want to help keep it running (and fuel those caffeine-fueled coding marathons),
