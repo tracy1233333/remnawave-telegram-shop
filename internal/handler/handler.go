@@ -240,6 +240,9 @@ func (h Handler) TrialCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 }
 
 func (h Handler) ActivateTrialCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if config.TrialDays() == 0 {
+		return
+	}
 	callback := update.CallbackQuery.Message.Message
 	_, err := h.paymentService.ActivateTrial(ctx, update.CallbackQuery.From.ID)
 	langCode := update.CallbackQuery.From.LanguageCode
