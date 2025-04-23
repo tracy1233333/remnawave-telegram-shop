@@ -513,9 +513,13 @@ func (h Handler) ConnectCommandHandler(ctx context.Context, b *bot.Bot, update *
 
 	langCode := update.Message.From.LanguageCode
 
+	isDisabled := true
 	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   buildConnectText(customer, langCode),
+		LinkPreviewOptions: &models.LinkPreviewOptions{
+			IsDisabled: &isDisabled,
+		},
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart}},
@@ -541,10 +545,14 @@ func (h Handler) ConnectCallbackHandler(ctx context.Context, b *bot.Bot, update 
 
 	langCode := update.CallbackQuery.From.LanguageCode
 
+	isDisabled := true
 	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
 		Text:      buildConnectText(customer, langCode),
+		LinkPreviewOptions: &models.LinkPreviewOptions{
+			IsDisabled: &isDisabled,
+		},
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart}},
