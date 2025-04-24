@@ -269,3 +269,25 @@ func (cr *CustomerRepository) UpdateBatch(ctx context.Context, customers []Custo
 	}
 	return nil
 }
+
+func (cr *CustomerRepository) DeleteByNotInTelegramIds(ctx context.Context, telegramIDs []int64) error {
+	if len(telegramIDs) == 0 {
+		return nil
+	}
+
+	buildDelete := sq.Delete("customer").
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.NotEq{"telegram_id": telegramIDs})
+
+	sqlStr, args, err := buildDelete.ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build delete query: %w", err)
+	}
+
+	_, err = cr.pool.Exec(ctx, sqlStr, args...)
+	if err != nil {
+		return fmt.Errorf("failed to delete customers: %w", err)
+	}
+
+	return nil
+}
