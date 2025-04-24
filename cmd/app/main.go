@@ -84,34 +84,19 @@ func main() {
 		panic(err)
 	}
 
-	if config.GetMiniAppURL() != "" {
-		_, err = b.SetChatMenuButton(ctx, &bot.SetChatMenuButtonParams{
-			MenuButton: &models.MenuButtonWebApp{
-				Type: models.MenuButtonTypeWebApp,
-				Text: tm.GetText(me.LanguageCode, "web_app_button_text"),
-				WebApp: models.WebAppInfo{
-					URL: config.GetMiniAppURL(),
-				},
-			},
-		})
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
-			Commands: []models.BotCommand{
-				{Command: "start", Description: "Начать работу с ботом"},
-			},
-			LanguageCode: "ru",
-		})
+	_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+		Commands: []models.BotCommand{
+			{Command: "start", Description: "Начать работу с ботом"},
+		},
+		LanguageCode: "ru",
+	})
 
-		_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
-			Commands: []models.BotCommand{
-				{Command: "start", Description: "Start using the bot"},
-			},
-			LanguageCode: "en",
-		})
-	}
+	_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+		Commands: []models.BotCommand{
+			{Command: "start", Description: "Start using the bot"},
+		},
+		LanguageCode: "en",
+	})
 
 	config.SetBotURL(fmt.Sprintf("https://t.me/%s", me.Username))
 
