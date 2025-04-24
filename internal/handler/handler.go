@@ -296,14 +296,14 @@ func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 
 	if existingCustomer == nil {
 		existingCustomer, err = h.customerRepository.Create(ctxWithTime, &database.Customer{
-			TelegramID: update.Message.Chat.ID,
+			TelegramID: callback.From.ID,
 			Language:   langCode,
 		})
 		if err != nil {
 			slog.Error("error creating customer", err)
 			return
 		}
-		slog.Info("user created", "telegramId", update.Message.Chat.ID)
+		slog.Info("user created", "telegramId", callback.From.ID)
 	} else {
 		updates := map[string]interface{}{
 			"language": langCode,
