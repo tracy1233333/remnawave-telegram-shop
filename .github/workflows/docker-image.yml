@@ -1,70 +1,27 @@
 name: Build docker image
+
 on:
   push:
     tags:
       - '*'
+
   workflow_dispatch:
+
+
 
 jobs:
   build-docker-image:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [linux/amd64, linux/arm64]
     permissions:
       packages: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/remnawave-telegram-shop-bot
-          tags: |
-            type=sha
-            type=raw,value=${{ github.ref_name }}
-            type=ref,event=tag
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-          cache-from: type=gha,scope=${{ matrix.platform }}
-          cache-to: type=gha,scope=${{ matrix.platform }},mode=max
-
-  merge-manifests:
-    needs: build-docker-image
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -75,46 +32,15 @@ jobs:
             type=sha
             type=raw,value=${{ github.ref_name }}
             type=ref,event=tag
-
-      - name: Create and push manifest
-        run: |
-          docker buildx imagetools create -t ${{ steps.meta.outputs.tags }} \
-            ghcr.io/${{ github.repository_owner }}/remnawave-telegram-shop-bot:${{ github.sha }}-amd64 \
-            ghcr.io/${{ github.repository_owner }}/remnawave-telegram-shop-bot:${{ github.sha }}-arm64
-          
-          # If this is a tag release, also update the tag-specific manifest
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            docker buildx imagetools create -t ghcr.io/${{ github.repository_owner }}/remnawave-telegram-shop-bot:${{ github.ref_name }} \
-              ghcr.io/${{ github.repository_owner }}/remnawave-telegram-shop-bot:${{ github.ref_name }}-amd64 \
-              ghcr.io/${{ github.repository_owner }}/remnawave-telegram-shop-bot:${{ github.ref_name }}-arm64
-          fi
-
-  send-notification:
-    needs: build-docker-image
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Build and push
+        uses: docker/build-push-action@v6
         with:
-          fetch-depth: 0
-
-      - name: Get tag message
-        id: tag-message
-        run: |
-          TAG_NAME=${{ github.ref_name }}
-          if git show-ref --tags | grep -q $TAG_NAME; then
-            TAG_MESSAGE=$(git tag -l --format='%(contents)' $TAG_NAME)
-            if [ -z "$TAG_MESSAGE" ]; then
-              TAG_MESSAGE="Нет описания тега"
-            fi
-          else
-            TAG_MESSAGE="Нет описания тега"
-          fi
-          TAG_MESSAGE="${TAG_MESSAGE//'%'/'%25'}"
-          TAG_MESSAGE="${TAG_MESSAGE//$'\n'/'%0A'}"
-          TAG_MESSAGE="${TAG_MESSAGE//$'\r'/'%0D'}"
-          echo "message=$TAG_MESSAGE" >> $GITHUB_OUTPUT
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
       - name: Send Telegram notification
+        if: success()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -122,5 +48,4 @@ jobs:
           message: |
             ✅ Build finished.
             🛠️ ${{ github.ref_name }}
-            📝 Release notes: ${{ steps.tag-message.outputs.message }}
-            📦 Multi-architecture image built for: AMD64, ARM64
+            🔨 Commit Message: ${{ github.event.head_commit.message }}
