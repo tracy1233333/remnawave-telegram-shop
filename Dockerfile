@@ -1,34 +1,57 @@
-FROM golang:1.24-alpine AS builder
-
-WORKDIR /app
-
+# Этап кэширования модулей
+FROM golang:1.24-alpine AS modules
+WORKDIR /modules
 COPY go.mod go.sum ./
-
 RUN go mod download
 
+# Этап сборки
+FROM golang:1.24-alpine AS builder
+WORKDIR /app
 
-COPY ./cmd/app .
+# Копируем модули из предыдущего этапа
+COPY --from=modules /go/pkg /go/pkg
 
-COPY /internal ./internal
-COPY /db ./db
-COPY /translations ./translations
+# Копируем исходный код
+COPY . .
 
-RUN apk update && apk add --no-cache ca-certificates
+# Устанавливаем необходимые сертификаты
+RUN apk update && apk add --no-cache ca-certificates tzdata
 RUN update-ca-certificates
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/app .
+# Устанавливаем переменные сборки
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+ARG VERSION
 
+# Оптимизированная компиляция с информацией о версии
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
+    -ldflags="-w -s -X main.Version=${VERSION:-dev} -X main.BuildTime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+    -o /bin/app ./cmd/app
+
+# Минимальный финальный образ
 FROM scratch
 
-COPY --from=builder /bin/app /app/app
+# Добавляем метаданные
+LABEL org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}"
+LABEL org.opencontainers.image.description="Remnawave Telegram Shop Bot"
+LABEL org.opencontainers.image.licenses="MIT"
 
-COPY --from=builder /app/db /db
-
-COPY --from=builder /app/translations /translations
-
+# Копируем необходимые системные файлы
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
+# Копируем собранное приложение
+COPY --from=builder /bin/app /app/app
 
+# Копируем необходимые файлы проекта
+COPY --from=builder /app/db /db
+COPY --from=builder /app/translations /translations
+
+# Создаем непривилегированного пользователя
 USER 1000
 
+# Объявляем порт (документация)
+EXPOSE 8080
+
+# Запускаем приложение
 CMD ["/app/app"]
