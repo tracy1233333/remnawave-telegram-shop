@@ -19,8 +19,8 @@ RUN apk update && apk add --no-cache ca-certificates tzdata
 RUN update-ca-certificates
 
 # Устанавливаем переменные сборки
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+ARG TARGETOS
+ARG TARGETARCH
 ARG VERSION
 
 # Оптимизированная компиляция с информацией о версии
