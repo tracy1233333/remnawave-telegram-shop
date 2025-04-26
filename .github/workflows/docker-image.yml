@@ -82,7 +82,6 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # Настройка Docker Buildx с корректным драйвером
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -90,7 +89,6 @@ jobs:
             image=moby/buildkit:v0.12.5
             network=host
 
-      # Авторизация в GitHub Container Registry
       - name: Login to GitHub Container Registry
         if: needs.prepare.outputs.should_push == 'true'
         uses: docker/login-action@v3
@@ -128,18 +126,6 @@ jobs:
           echo -e "$ARCH_TAGS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # Настройка кеша для Go модулей через actions/cache
-      - name: Set up Go modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      # Сборка и публикация с использованием локального кеша
       - name: Build and push per architecture
         uses: docker/build-push-action@v6
         with:
@@ -148,15 +134,14 @@ jobs:
           push: ${{ needs.prepare.outputs.should_push }}
           tags: ${{ steps.meta-arch.outputs.tags }}
           labels: ${{ needs.prepare.outputs.labels }}
-          # Не используем GHA кеш для BuildX
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
           build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            TARGETARCH=${{ steps.extract-arch.outputs.arch }}
             VERSION=${{ needs.prepare.outputs.version }}
-          # Отключаем генерацию provenance и sbom
           provenance: false
           sbom: false
-          # Используем локальный кеш Docker
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/cache:${{ steps.extract-arch.outputs.arch }}
-          cache-to: ${{ needs.prepare.outputs.should_push == 'true' && format('type=registry,ref=ghcr.io/{0}/cache:{1},mode=max', github.repository_owner, steps.extract-arch.outputs.arch) || '' }}
 
   # Создание мультиплатформенного манифеста
   create-manifest:
@@ -191,7 +176,7 @@ jobs:
               # Создаем манифест и включаем в него образы для разных архитектур
               docker buildx imagetools create -t $TAG \
                 $TAG-amd64 \
-                $TAG-arm64 || echo "Warning: Failed to create manifest for $TAG"
+                $TAG-arm64
             fi
           done <<< "$TAGS"
 
