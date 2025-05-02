@@ -27,22 +27,14 @@ func (t *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.base.RoundTrip(req)
 }
 
-type staticToken struct{ token string }
-
-func (s staticToken) Authorization(_ context.Context, _ remapi.OperationName) (remapi.Authorization, error) {
-	return remapi.Authorization{Token: s.token}, nil
-}
-
 func NewClient(baseURL, token, mode string) *Client {
-	sec := staticToken{token: token}
-
 	client := &http.Client{}
 	if mode == "local" {
 		client.Transport = &headerTransport{
 			base: http.DefaultTransport,
 		}
 	}
-	remnawaveApi, err := remapi.NewClient(baseURL, sec, remapi.WithClient(client))
+	remnawaveApi, err := remapi.NewClient(baseURL, remapi.StaticToken{Token: token}, remapi.WithClient(client))
 	if err != nil {
 		panic(err)
 	}
