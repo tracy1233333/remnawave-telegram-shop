@@ -134,23 +134,23 @@ mv .env.sample .env
 
 3. Run the bot:
 
-   ```bash
-   docker compose up -d
-   ```
+```bash
+docker compose up -d
+```
 
 ## Update Instructions
 
 1. Pull the latest Docker image:
 
-   ```bash
-   docker compose pull
-   ```
+```bash
+docker compose pull
+```
 
 
 2. Restart the containers:
-   ```bash
-   docker compose down && docker compose up -d
-   ```
+```bash
+docker compose down && docker compose up -d
+```
 
 ## Donations
 
