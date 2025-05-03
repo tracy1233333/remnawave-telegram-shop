@@ -146,13 +146,7 @@ docker compose up -d
 docker compose pull
 ```
 
-
-2. Update translations:
-```bash
-git pull
-```
-
-3. Restart the containers:
+2. Restart the containers:
 ```bash
 docker compose down && docker compose up -d
 ```
