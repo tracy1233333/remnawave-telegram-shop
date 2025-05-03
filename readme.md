@@ -138,6 +138,10 @@ mv .env.sample .env
 docker compose up -d
 ```
 
+## How to change bot messages
+
+Go to folder translations inside bot folder and change needed language.
+
 ## Update Instructions
 
 1. Pull the latest Docker image:
