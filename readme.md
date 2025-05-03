@@ -5,6 +5,8 @@
 A Telegram bot for selling subscriptions with integration to Remnawave (https://remna.st/). This service allows users to
 purchase and manage subscriptions through Telegram with multiple payment system options.
 
+- [remnawave-api-go](https://github.com/Jolymmiles/remnawave-api-go)
+
 ## Admin commands
 
 - `/sync` - Poll users from remnawave and synchronize them with the database. Remove all users which not present in
