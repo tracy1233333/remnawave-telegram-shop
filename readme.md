@@ -1,5 +1,7 @@
 # Remnawave Telegram Shop
-
+[![Stars](https://img.shields.io/github/stars/Jolymmiles/remnawave-telegram-shop.svg?style=social)](https://github.com/Jolymmiles/remnawave-telegram-shop/stargazers)
+[![Forks](https://img.shields.io/github/forks/Jolymmiles/remnawave-telegram-shop.svg?style=social)](https://github.com/Jolymmiles/remnawave-telegram-shop/network/members)
+[![Issues](https://img.shields.io/github/issues/Jolymmiles/remnawave-telegram-shop.svg)](https://github.com/Jolymmiles/remnawave-telegram-shop/issues)
 ## Description
 
 A Telegram bot for selling subscriptions with integration to Remnawave (https://remna.st/). This service allows users to
