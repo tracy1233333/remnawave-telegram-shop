@@ -127,17 +127,17 @@ func (r *Client) createUser(ctx context.Context, customerId int64, telegramId in
 	}
 
 	inbounds := resp.GetResponse()
-	inboundsId := make([]uuid.UUID, len(inbounds))
-	for i, inbound := range inbounds {
+	inboundsId := make([]uuid.UUID, 0, len(config.InboundUUIDs()))
+	for _, inbound := range inbounds {
 		if config.InboundUUIDs() != nil && len(config.InboundUUIDs()) > 0 {
-			if _, isExist := config.InboundUUIDs()[inbound.UUID.String()]; !isExist {
+			if _, isExist := config.InboundUUIDs()[inbound.UUID]; !isExist {
 				continue
+			} else {
+				inboundsId = append(inboundsId, inbound.UUID)
 			}
-			inboundsId[i] = inbound.UUID
 		} else {
-			inboundsId[i] = inbound.UUID
+			inboundsId = append(inboundsId, inbound.UUID)
 		}
-
 	}
 
 	createUserRequestDto := remapi.CreateUserRequestDto{
