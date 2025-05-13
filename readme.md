@@ -1,14 +1,13 @@
 # Remnawave Telegram Shop
-[![Stars](https://img.shields.io/github/stars/Jolymmiels/remnawave-api-go.svg?style=social)](https://github.com/Jolymmiels/remnawave-api-go/stargazers)
-[![Forks](https://img.shields.io/github/forks/Jolymmiels/remnawave-api-go.svg?style=social)](https://github.com/Jolymmiels/remnawave-api-go/network/members)
-[![Issues](https://img.shields.io/github/issues/Jolymmiels/remnawave-api-go.svg)](https://github.com/Jolymmiels/remnawave-api-go/issues)
-
+[![Stars](https://img.shields.io/github/stars/Jolymmiels/remnawave-telegram-shop.svg?style=social)](https://github.com/Jolymmiels/remnawave-telegram-shop/stargazers)
+[![Forks](https://img.shields.io/github/forks/Jolymmiels/remnawave-telegram-shop.svg?style=social)](https://github.com/Jolymmiels/remnawave-telegram-shop/network/members)
+[![Issues](https://img.shields.io/github/issues/Jolymmiels/remnawave-telegram-shop.svg)](https://github.com/Jolymmiels/remnawave-telegram-shop/issues)
 ## Description
 
 A Telegram bot for selling subscriptions with integration to Remnawave (https://remna.st/). This service allows users to
 purchase and manage subscriptions through Telegram with multiple payment system options.
 
-- [remnawave-api-go](https://github.com/Jolymmiels/remnawave-api-go)
+- [remnawave-api-go](https://github.com/Jolymmiles/remnawave-api-go)
 
 ## Admin commands
 
