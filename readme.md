@@ -24,7 +24,6 @@ purchase and manage subscriptions through Telegram with multiple payment system 
   expires, helping them avoid service interruption
 - Multi-language support (Russian and English)
 - **Selective Inbound Assignment**: Configure specific inbounds to assign to users via UUID filtering
-- **Country Filtering**: Configure which countries are displayed to users in the bot interface
 - All telegram message support HTML formatting https://core.telegram.org/bots/api#html-style
 ## Environment Variables
 
@@ -64,7 +63,6 @@ The application requires the following environment variables to be set:
 | `TRIAL_TRAFFIC_LIMIT`    | Maximum allowed traffic in gb for trial subscriptions                                                                                        |     
 | `TRIAL_DAYS`             | Number of days for trial subscriptions. if 0 = disabled.                                                                                     |
 | `INBOUND_UUIDS`          | Comma-separated list of inbound UUIDs to assign to users (e.g., "773db654-a8b2-413a-a50b-75c3536238fd,bc979bdd-f1fa-4d94-8a51-38a0f518a2a2") |
-| `ALLOWED_COUNTRIES`      | Comma-separated list of country codes to show to users (e.g., "US,NL,DE,FR,SG")                                                              |
 
 ## User Interface
 
@@ -90,16 +88,6 @@ The bot supports selective inbound assignment to users:
 - If specified, only inbounds with matching UUIDs will be assigned to new users
 - If no inbounds match the specified UUIDs or the variable is empty, all available inbounds will be assigned
 - This feature allows fine-grained control over which connection methods are available to users
-
-## Country Configuration
-
-The bot supports filtering which countries are displayed to users:
-
-- Configure specific country codes in the `ALLOWED_COUNTRIES` environment variable (comma-separated)
-- If specified, only countries with matching codes will be shown to users
-- If no countries match the specified codes or the variable is empty, all available countries will be shown
-- This feature allows you to limit which VPN locations are displayed to users
-- Country codes should be specified in ISO standard format (e.g., US, NL, DE, FR, SG)
 
 ## Plugins and Dependencies
 
