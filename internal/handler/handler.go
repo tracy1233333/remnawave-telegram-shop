@@ -13,6 +13,7 @@ import (
 	"remnawave-tg-shop-bot/internal/sync"
 	"remnawave-tg-shop-bot/internal/translation"
 	"remnawave-tg-shop-bot/internal/yookasa"
+	"remnawave-tg-shop-bot/utils"
 	"strconv"
 	"strings"
 	"time"
@@ -100,7 +101,6 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 			slog.Error("error creating customer", err)
 			return
 		}
-		slog.Info("user created", "telegramId", update.Message.Chat.ID)
 
 		if strings.Contains(update.Message.Text, "ref_") {
 			arg := strings.Split(update.Message.Text, " ")[1]
@@ -118,7 +118,7 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 						slog.Error("error creating referral", err)
 						return
 					}
-					slog.Info("referral created", "referrerId", referrerId, "refereeId", existingCustomer.TelegramID)
+					slog.Info("referral created", "referrerId", utils.MaskHalfInt64(referrerId), "refereeId", utils.MaskHalfInt64(existingCustomer.TelegramID))
 				}
 			}
 		}
@@ -226,7 +226,6 @@ func (h Handler) CreateCustomerIfNotExistMiddleware(next bot.HandlerFunc) bot.Ha
 				slog.Error("error creating customer", err)
 				return
 			}
-			slog.Info("user created", "telegramId", telegramId)
 		} else {
 			updates := map[string]interface{}{
 				"language": langCode,
@@ -326,7 +325,7 @@ func (h Handler) TrialCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 		return
 	}
 	if c == nil {
-		slog.Error("customer not exist", "chatID", update.CallbackQuery.Message.Message.From.ID, "error", err)
+		slog.Error("customer not exist", "telegramId", utils.MaskHalfInt64(update.CallbackQuery.From.ID), "error", err)
 		return
 	}
 	if c.SubscriptionLink != nil {
@@ -361,7 +360,7 @@ func (h Handler) ActivateTrialCallbackHandler(ctx context.Context, b *bot.Bot, u
 		return
 	}
 	if c == nil {
-		slog.Error("customer not exist", "chatID", update.CallbackQuery.Message.Message.From.ID, "error", err)
+		slog.Error("customer not exist", "telegramId", utils.MaskHalfInt64(update.CallbackQuery.From.ID), "error", err)
 		return
 	}
 	if c.SubscriptionLink != nil {
@@ -562,7 +561,7 @@ func (h Handler) ConnectCommandHandler(ctx context.Context, b *bot.Bot, update *
 		return
 	}
 	if customer == nil {
-		slog.Error("customer not exist", "chatID", update.Message.Chat.ID, "error", err)
+		slog.Error("customer not exist", "telegramId", utils.MaskHalfInt64(update.Message.Chat.ID), "error", err)
 		return
 	}
 
@@ -597,7 +596,7 @@ func (h Handler) ConnectCallbackHandler(ctx context.Context, b *bot.Bot, update 
 		return
 	}
 	if customer == nil {
-		slog.Error("customer not exist", "chatID", callback.Chat.ID, "error", err)
+		slog.Error("customer not exist", "telegramId", utils.MaskHalfInt64(callback.Chat.ID), "error", err)
 		return
 	}
 
