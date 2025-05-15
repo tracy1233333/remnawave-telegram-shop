@@ -6,6 +6,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"log/slog"
+	"remnawave-tg-shop-bot/internal/cache"
 	"remnawave-tg-shop-bot/internal/config"
 	"remnawave-tg-shop-bot/internal/cryptopay"
 	"remnawave-tg-shop-bot/internal/database"
@@ -28,6 +29,7 @@ type Handler struct {
 	paymentService     *payment.PaymentService
 	syncService        *sync.SyncService
 	referralRepository *database.ReferralRepository
+	cache              *cache.Cache
 }
 
 func NewHandler(
@@ -37,7 +39,7 @@ func NewHandler(
 	customerRepository *database.CustomerRepository,
 	purchaseRepository *database.PurchaseRepository,
 	cryptoPayClient *cryptopay.Client,
-	yookasaClient *yookasa.Client, referralRepository *database.ReferralRepository) *Handler {
+	yookasaClient *yookasa.Client, referralRepository *database.ReferralRepository, cache *cache.Cache) *Handler {
 	return &Handler{
 		syncService:        syncService,
 		paymentService:     paymentService,
@@ -47,6 +49,7 @@ func NewHandler(
 		yookasaClient:      yookasaClient,
 		translation:        translation,
 		referralRepository: referralRepository,
+		cache:              cache,
 	}
 }
 
@@ -527,8 +530,7 @@ func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update 
 	}
 
 	ctxWithUsername := context.WithValue(ctx, "username", update.CallbackQuery.From.Username)
-	paymentURL, err := h.paymentService.CreatePurchase(ctxWithUsername, price, month, customer, invoiceType)
-
+	paymentURL, purchaseId, err := h.paymentService.CreatePurchase(ctxWithUsername, price, month, customer, invoiceType)
 	if err != nil {
 		slog.Error("Error creating payment", err)
 		return
@@ -536,7 +538,7 @@ func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update 
 
 	langCode := update.CallbackQuery.From.LanguageCode
 
-	_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+	message, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
 		ReplyMarkup: models.InlineKeyboardMarkup{
@@ -550,8 +552,9 @@ func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update 
 	})
 	if err != nil {
 		slog.Error("Error updating sell message", err)
+		return
 	}
-
+	h.cache.Set(purchaseId, message.ID)
 }
 
 func (h Handler) ConnectCommandHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
