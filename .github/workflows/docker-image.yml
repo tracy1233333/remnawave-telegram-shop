@@ -1,4 +1,3 @@
-
 name: Build docker image
 
 on:
@@ -24,23 +23,22 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Add this step to set up BuildX
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: image=moby/buildkit:latest
-
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/remnawave-telegram-shop-bot
+          # Set up proper tagging strategy
           tags: |
+            # Always include latest tag
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
+            # Use semver tags when Git tag is in semver format
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            # Use the short SHA for non-tag builds
             type=sha,format=short,prefix=
+            # Include the tag name if it's a tag-triggered build
             type=ref,event=tag
 
       - name: Set up Docker Buildx
@@ -54,42 +52,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  send-notification:
-    needs: build-docker-image
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Set commit message
-        id: commit-message
-        shell: bash
-        run: |
-            if [[ "${{ github.event_name }}" == "push" && "${{ github.ref_type }}" == "tag" ]]; then
-              # For tag events
-              TAG_MSG=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
-              if [ -z "$TAG_MSG" ]; then
-                TAG_MSG="Release ${{ github.ref_name }}"
-              fi
-            else
-              # For workflow_dispatch or other events
-              TAG_MSG="${{ github.event.head_commit.message || format('Manual build from {0}', github.ref_name) }}"
-            fi
-            echo "message<<EOF" >> $GITHUB_OUTPUT
-            echo "$TAG_MSG" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-      
-
-      - name: Send Telegram notification
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: |
-            ✅ Build finished.
-            🚀 Project: remnawave-telegram-shop-bot
-            🛠️ ${{ github.ref_name }}
-            📝 Message: ${{ steps.commit-message.outputs.message }}
-            🔗 Image: ghcr.io/${{ github.repository_owner }}/remnawave-telegram-shop-bot:${{ github.ref_name }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            COMMIT=${{ github.sha }}
