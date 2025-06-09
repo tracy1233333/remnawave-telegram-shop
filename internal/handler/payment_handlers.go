@@ -130,13 +130,14 @@ func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update 
 		return
 	}
 
-	price, err := strconv.Atoi(callbackQuery["amount"])
-	if err != nil {
-		slog.Error("Error getting price from query", err)
-		return
-	}
-
 	invoiceType := database.InvoiceType(callbackQuery["invoiceType"])
+
+	var price int
+	if invoiceType == database.InvoiceTypeTelegram {
+		price = config.StarsPrice(month)
+	} else {
+		price = config.Price(month)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
