@@ -101,22 +101,22 @@ func Price6() int {
 	return conf.price6
 }
 func Price12() int {
-        return conf.price12
+	return conf.price12
 }
 
 func Price(month int) int {
-       switch month {
-       case 1:
-               return conf.price1
-       case 3:
-               return conf.price3
-       case 6:
-               return conf.price6
-       case 12:
-               return conf.price12
-       default:
-               return conf.price1
-       }
+	switch month {
+	case 1:
+		return conf.price1
+	case 3:
+		return conf.price3
+	case 6:
+		return conf.price6
+	case 12:
+		return conf.price12
+	default:
+		return conf.price1
+	}
 }
 
 func StarsPrice1() int {

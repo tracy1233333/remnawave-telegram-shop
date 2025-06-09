@@ -81,10 +81,10 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 	callback := update.CallbackQuery.Message.Message
 	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
 	langCode := update.CallbackQuery.From.LanguageCode
-       month := callbackQuery["month"]
-       amount := callbackQuery["amount"]
+	month := callbackQuery["month"]
+	amount := callbackQuery["amount"]
 
-       var keyboard [][]models.InlineKeyboardButton
+	var keyboard [][]models.InlineKeyboardButton
 
 	if config.IsCryptoPayEnabled() {
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
@@ -98,17 +98,17 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 		})
 	}
 
-       if config.IsTelegramStarsEnabled() {
-               keyboard = append(keyboard, []models.InlineKeyboardButton{
-                       {Text: h.translation.GetText(langCode, "stars_button"), CallbackData: fmt.Sprintf("%s?month=%s&invoiceType=%s&amount=%s", CallbackPayment, month, database.InvoiceTypeTelegram, amount)},
-               })
-       }
+	if config.IsTelegramStarsEnabled() {
+		keyboard = append(keyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "stars_button"), CallbackData: fmt.Sprintf("%s?month=%s&invoiceType=%s&amount=%s", CallbackPayment, month, database.InvoiceTypeTelegram, amount)},
+		})
+	}
 
 	keyboard = append(keyboard, []models.InlineKeyboardButton{
 		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},
 	})
 
-       _, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+	_, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
 		ReplyMarkup: models.InlineKeyboardMarkup{
@@ -130,14 +130,14 @@ func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update 
 		return
 	}
 
-       invoiceType := database.InvoiceType(callbackQuery["invoiceType"])
+	invoiceType := database.InvoiceType(callbackQuery["invoiceType"])
 
-       var price int
-       if invoiceType == database.InvoiceTypeTelegram {
-               price = config.StarsPrice(month)
-       } else {
-               price = config.Price(month)
-       }
+	var price int
+	if invoiceType == database.InvoiceTypeTelegram {
+		price = config.StarsPrice(month)
+	} else {
+		price = config.Price(month)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
