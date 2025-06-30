@@ -240,6 +240,8 @@ func InitConfig() {
 
 	conf.trialDays = mustEnvInt("TRIAL_DAYS")
 
+	conf.enableAutoPayment = envBool("ENABLE_AUTO_PAYMENT")
+
 	conf.price1 = mustEnvInt("PRICE_1")
 	conf.price3 = mustEnvInt("PRICE_3")
 	conf.price6 = mustEnvInt("PRICE_6")
