@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"log"
 	"log/slog"
 	"os"
 	"strconv"
@@ -10,41 +11,29 @@ import (
 )
 
 type config struct {
-	telegramToken          string
-	price1                 int
-	price3                 int
-	price6                 int
-	price12                int
-	starsPrice1            int
-	starsPrice3            int
-	starsPrice6            int
-	starsPrice12           int
-	remnawaveUrl           string
-	remnawaveToken         string
-	remnawaveMode          string
-	databaseURL            string
-	cryptoPayURL           string
-	cryptoPayToken         string
-	botURL                 string
-	yookasaURL             string
-	yookasaShopId          string
-	yookasaSecretKey       string
-	yookasaEmail           string
-	trafficLimit           int
-	feedbackURL            string
-	channelURL             string
-	serverStatusURL        string
-	supportURL             string
-	tosURL                 string
-	isYookasaEnabled       bool
-	isCryptoEnabled        bool
-	isTelegramStarsEnabled bool
-	adminTelegramId        int64
-	trialDays              int
-	trialTrafficLimit      int
-	inboundUUIDs           map[uuid.UUID]uuid.UUID
-	referralDays           int
-	miniApp                string
+	telegramToken                                             string
+	price1, price3, price6, price12                           int
+	starsPrice1, starsPrice3, starsPrice6, starsPrice12       int
+	remnawaveUrl, remnawaveToken, remnawaveMode               string
+	databaseURL                                               string
+	cryptoPayURL, cryptoPayToken                              string
+	botURL                                                    string
+	yookasaURL, yookasaShopId, yookasaSecretKey, yookasaEmail string
+	trafficLimit, trialTrafficLimit                           int
+	feedbackURL                                               string
+	channelURL                                                string
+	serverStatusURL                                           string
+	supportURL                                                string
+	tosURL                                                    string
+	isYookasaEnabled                                          bool
+	isCryptoEnabled                                           bool
+	isTelegramStarsEnabled                                    bool
+	adminTelegramId                                           int64
+	trialDays                                                 int
+	inboundUUIDs                                              map[uuid.UUID]uuid.UUID
+	referralDays                                              int
+	miniApp                                                   string
+	enableAutoPayment                                         bool
 }
 
 var conf config
@@ -91,15 +80,19 @@ func TosURL() string {
 func YookasaEmail() string {
 	return conf.yookasaEmail
 }
+
 func Price1() int {
 	return conf.price1
 }
+
 func Price3() int {
 	return conf.price3
 }
+
 func Price6() int {
 	return conf.price6
 }
+
 func Price12() int {
 	return conf.price12
 }
@@ -117,22 +110,6 @@ func Price(month int) int {
 	default:
 		return conf.price1
 	}
-}
-
-func StarsPrice1() int {
-	return conf.starsPrice1
-}
-
-func StarsPrice3() int {
-	return conf.starsPrice3
-}
-
-func StarsPrice6() int {
-	return conf.starsPrice6
-}
-
-func StarsPrice12() int {
-	return conf.starsPrice12
 }
 
 func StarsPrice(month int) int {
@@ -207,6 +184,39 @@ func GetAdminTelegramId() int64 {
 
 const bytesInGigabyte = 1073741824
 
+func mustEnv(key string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		log.Panicf("env %q not set", key)
+	}
+	return v
+}
+
+func mustEnvInt(key string) int {
+	v := mustEnv(key)
+	i, err := strconv.Atoi(v)
+	if err != nil {
+		log.Panicf("invalid int in %q: %v", key, err)
+	}
+	return i
+}
+
+func envIntDefault(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	i, err := strconv.Atoi(v)
+	if err != nil {
+		log.Panicf("invalid int in %q: %v", key, err)
+	}
+	return i
+}
+
+func envBool(key string) bool {
+	return os.Getenv(key) == "true"
+}
+
 func InitConfig() {
 	err := godotenv.Load(".env")
 
@@ -215,176 +225,70 @@ func InitConfig() {
 		panic("ADMIN_TELEGRAM_ID .env variable not set")
 	}
 
-	conf.telegramToken = os.Getenv("TELEGRAM_TOKEN")
-	if conf.telegramToken == "" {
-		panic("TELEGRAM_TOKEN .env variable not set")
-	}
+	conf.telegramToken = mustEnv("TELEGRAM_TOKEN")
 
-	conf.miniApp = os.Getenv("MINI_APP_URL")
-	if conf.miniApp == "" {
-		conf.miniApp = ""
-	}
-
-	conf.trialTrafficLimit, err = strconv.Atoi(os.Getenv("TRIAL_TRAFFIC_LIMIT"))
-	if err != nil {
-		panic("TRIAL_TRAFFIC_LIMIT .env variable not set")
-	}
-
-	conf.trialDays, err = strconv.Atoi(os.Getenv("TRIAL_DAYS"))
-	if err != nil {
-		panic("TRIAL_DAYS .env variable not set")
-	}
-
-	strPrice := os.Getenv("PRICE_1")
-	if strPrice == "" {
-		panic("PRICE_1 .env variable not set")
-	}
-	price, err := strconv.Atoi(strPrice)
-	if err != nil {
-		panic(err)
-	}
-	conf.price1 = price
-
-	starsPrice1Str := os.Getenv("STARS_PRICE_1")
-	if starsPrice1Str != "" {
-		priceStar1, err := strconv.Atoi(starsPrice1Str)
-		if err != nil {
-			panic(err)
+	conf.miniApp = func() string {
+		v := os.Getenv("MINI_APP_URL")
+		if v != "" {
+			return v
+		} else {
+			return ""
 		}
-		conf.starsPrice1 = priceStar1
-	} else {
-		conf.starsPrice1 = conf.price1
+	}()
+
+	conf.trialTrafficLimit = mustEnvInt("TRIAL_TRAFFIC_LIMIT")
+
+	conf.trialDays = mustEnvInt("TRIAL_DAYS")
+
+	conf.price1 = mustEnvInt("PRICE_1")
+	conf.price3 = mustEnvInt("PRICE_3")
+	conf.price6 = mustEnvInt("PRICE_6")
+	conf.price12 = mustEnvInt("PRICE_12")
+
+	conf.isTelegramStarsEnabled = envBool("TELEGRAM_STARS_ENABLED")
+	if conf.isTelegramStarsEnabled {
+		conf.starsPrice1 = envIntDefault("STARS_PRICE_1", conf.price1)
+		conf.starsPrice3 = envIntDefault("STARS_PRICE_3", conf.price3)
+		conf.starsPrice6 = envIntDefault("STARS_PRICE_6", conf.price6)
+		conf.starsPrice12 = envIntDefault("STARS_PRICE_12", conf.price12)
+
 	}
 
-	strPrice3 := os.Getenv("PRICE_3")
-	if strPrice3 == "" {
-		panic("PRICE_3 .env variable not set")
-	}
-	price3, err := strconv.Atoi(strPrice3)
-	if err != nil {
-		panic(err)
-	}
-	conf.price3 = price3
+	conf.remnawaveUrl = mustEnv("REMNAWAVE_URL")
 
-	starsPrice3Str := os.Getenv("STARS_PRICE_3")
-	if starsPrice3Str != "" {
-		priceStar3, err := strconv.Atoi(starsPrice3Str)
-		if err != nil {
-			panic(err)
+	conf.remnawaveMode = func() string {
+		v := os.Getenv("REMNAWAVE_MODE")
+		if v != "" {
+			if conf.remnawaveMode != "remote" && conf.remnawaveMode != "local" {
+				panic("REMNAWAVE_MODE .env variable must be either 'remote' or 'local'")
+			} else {
+				return v
+			}
+		} else {
+			return "remote"
 		}
-		conf.starsPrice3 = priceStar3
-	} else {
-		conf.starsPrice3 = conf.price3
-	}
+	}()
 
-	strPrice6 := os.Getenv("PRICE_6")
-	if strPrice6 == "" {
-		panic("PRICE_6 .env variable not set")
-	}
-	price6, err := strconv.Atoi(strPrice6)
-	if err != nil {
-		panic(err)
-	}
-	conf.price6 = price6
+	conf.remnawaveToken = mustEnv("REMNAWAVE_TOKEN")
 
-	starsPrice6Str := os.Getenv("STARS_PRICE_6")
-	if starsPrice6Str != "" {
-		priceStar6, err := strconv.Atoi(starsPrice6Str)
-		if err != nil {
-			panic(err)
-		}
-		conf.starsPrice6 = priceStar6
-	} else {
-		conf.starsPrice6 = conf.price6
-	}
+	conf.databaseURL = mustEnv("DATABASE_URL")
 
-	strPrice12 := os.Getenv("PRICE_12")
-	if strPrice12 == "" {
-		panic("PRICE_12 .env variable not set")
-	}
-	price12, err := strconv.Atoi(strPrice12)
-	if err != nil {
-		panic(err)
-	}
-	conf.price12 = price12
-
-	starsPrice12Str := os.Getenv("STARS_PRICE_12")
-	if starsPrice12Str != "" {
-		priceStar12, err := strconv.Atoi(starsPrice12Str)
-		if err != nil {
-			panic(err)
-		}
-		conf.starsPrice12 = priceStar12
-	} else {
-		conf.starsPrice12 = conf.price12
-	}
-
-	conf.remnawaveUrl = os.Getenv("REMNAWAVE_URL")
-	if conf.remnawaveUrl == "" {
-		panic("REMNAWAVE_URL .env variable not set")
-	}
-
-	conf.remnawaveMode = os.Getenv("REMNAWAVE_MODE")
-	if conf.remnawaveMode == "" {
-		conf.remnawaveMode = "remote"
-	} else if conf.remnawaveMode != "remote" && conf.remnawaveMode != "local" {
-		panic("REMNAWAVE_MODE .env variable must be either 'remote' or 'local'")
-	}
-
-	conf.remnawaveToken = os.Getenv("REMNAWAVE_TOKEN")
-	if conf.remnawaveToken == "" {
-		panic("REMNAWAVE_TOKEN .env variable not set")
-	}
-
-	conf.databaseURL = os.Getenv("DATABASE_URL")
-	if conf.databaseURL == "" {
-		panic("DADA_BASE_URL .env variable not set")
-	}
-
-	conf.isTelegramStarsEnabled = os.Getenv("TELEGRAM_STARS_ENABLED") == "true"
-
-	conf.isCryptoEnabled = os.Getenv("CRYPTO_PAY_ENABLED") == "true"
+	conf.isCryptoEnabled = envBool("CRYPTO_PAY_ENABLED")
 	if conf.isCryptoEnabled {
-		conf.cryptoPayURL = os.Getenv("CRYPTO_PAY_URL")
-		if conf.cryptoPayURL == "" {
-			panic("CRYPTO_PAY_URL .env variable not set")
-		}
-		conf.cryptoPayToken = os.Getenv("CRYPTO_PAY_TOKEN")
-		if conf.cryptoPayToken == "" {
-			panic("CRYPTO_PAY_TOKEN .env variable not set")
-		}
+		conf.cryptoPayURL = mustEnv("CRYPTO_PAY_URL")
+		conf.cryptoPayToken = mustEnv("CRYPTO_PAY_TOKEN")
 	}
 
-	conf.isYookasaEnabled = os.Getenv("YOOKASA_ENABLED") == "true"
+	conf.isYookasaEnabled = envBool("YOOKASA_ENABLED")
 	if conf.isYookasaEnabled {
-		conf.yookasaURL = os.Getenv("YOOKASA_URL")
-		conf.yookasaShopId = os.Getenv("YOOKASA_SHOP_ID")
-		conf.yookasaSecretKey = os.Getenv("YOOKASA_SECRET_KEY")
-
-		if conf.yookasaURL == "" || conf.yookasaShopId == "" || conf.yookasaSecretKey == "" {
-			panic("YOOKASA_URL, YOOKASA_SHOP_ID, YOOKASA_SECRET_KEY .env variables not set")
-		}
-
-		conf.yookasaEmail = os.Getenv("YOOKASA_EMAIL")
-		if conf.yookasaEmail == "" {
-			panic("YOOKASA_EMAIL .env variable not set")
-		}
+		conf.yookasaURL = mustEnv("YOOKASA_URL")
+		conf.yookasaShopId = mustEnv("YOOKASA_SHOP_ID")
+		conf.yookasaSecretKey = mustEnv("YOOKASA_SECRET_KEY")
+		conf.yookasaEmail = mustEnv("YOOKASA_EMAIL")
 	}
 
-	strLimit := os.Getenv("TRAFFIC_LIMIT")
-	if strLimit == "" {
-		panic("TRAFFIC_LIMIT .env variable not set")
-	}
-	limit, err := strconv.Atoi(strLimit)
-	if err != nil {
-		panic(err)
-	}
-	conf.trafficLimit = limit
-
-	conf.referralDays, err = strconv.Atoi(os.Getenv("REFERRAL_DAYS"))
-	if err != nil {
-		panic("REFERRAL_DAYS .env variable not set")
-	}
+	conf.trafficLimit = mustEnvInt("TRAFFIC_LIMIT")
+	conf.referralDays = mustEnvInt("REFERRAL_DAYS")
 
 	conf.serverStatusURL = os.Getenv("SERVER_STATUS_URL")
 	conf.supportURL = os.Getenv("SUPPORT_URL")
@@ -392,21 +296,23 @@ func InitConfig() {
 	conf.channelURL = os.Getenv("CHANNEL_URL")
 	conf.tosURL = os.Getenv("TOS_URL")
 
-	inboundUUIDsStr := os.Getenv("INBOUND_UUIDS")
-	if inboundUUIDsStr != "" {
-		uuids := strings.Split(inboundUUIDsStr, ",")
-		var inboundsMap = make(map[uuid.UUID]uuid.UUID)
-		for _, value := range uuids {
-			uuid, err := uuid.Parse(value)
-			if err != nil {
-				panic(err)
+	conf.inboundUUIDs = func() map[uuid.UUID]uuid.UUID {
+		v := os.Getenv("INBOUND_UUID")
+		if v != "" {
+			uuids := strings.Split(v, ",")
+			var inboundsMap = make(map[uuid.UUID]uuid.UUID)
+			for _, value := range uuids {
+				uuid, err := uuid.Parse(value)
+				if err != nil {
+					panic(err)
+				}
+				inboundsMap[uuid] = uuid
 			}
-			inboundsMap[uuid] = uuid
+			slog.Info("Loaded inbound UUIDs", "uuids", conf.inboundUUIDs)
+			return inboundsMap
+		} else {
+			slog.Info("No inbound UUIDs specified, all will be used")
+			return map[uuid.UUID]uuid.UUID{}
 		}
-		conf.inboundUUIDs = inboundsMap
-		slog.Info("Loaded inbound UUIDs", "uuids", conf.inboundUUIDs)
-	} else {
-		conf.inboundUUIDs = map[uuid.UUID]uuid.UUID{}
-		slog.Info("No inbound UUIDs specified, all will be used")
-	}
+	}()
 }
