@@ -27,6 +27,11 @@ purchase and manage subscriptions through Telegram with multiple payment system 
 - **Selective Inbound Assignment**: Configure specific inbounds to assign to users via UUID filtering
 - All telegram message support HTML formatting https://core.telegram.org/bots/api#html-style
 - Healthcheck - bot checking availability of db, panel.
+
+## API
+
+- /healthcheck
+  
 ## Environment Variables
 
 The application requires the following environment variables to be set:
