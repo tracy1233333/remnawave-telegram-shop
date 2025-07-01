@@ -43,6 +43,15 @@ func NewClient(baseURL, token, mode string) *Client {
 	return &Client{client: remnawaveApi}
 }
 
+func (r *Client) Ping(ctx context.Context) error {
+	params := remapi.UsersControllerGetAllUsersParams{
+		Size:  remapi.NewOptFloat64(1),
+		Start: remapi.NewOptFloat64(0),
+	}
+	_, err := r.client.UsersControllerGetAllUsers(ctx, params)
+	return err
+}
+
 func (r *Client) GetUsers(ctx context.Context) (*[]remapi.UserDto, error) {
 	pageSize := float64(250)
 	start := float64(0)

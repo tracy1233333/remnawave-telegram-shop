@@ -34,6 +34,7 @@ type config struct {
 	referralDays                                              int
 	miniApp                                                   string
 	enableAutoPayment                                         bool
+	healthCheckPort                                           int
 }
 
 var conf config
@@ -182,6 +183,10 @@ func GetAdminTelegramId() int64 {
 	return conf.adminTelegramId
 }
 
+func GetHealthCheckPort() int {
+	return conf.healthCheckPort
+}
+
 const bytesInGigabyte = 1073741824
 
 func mustEnv(key string) string {
@@ -237,6 +242,8 @@ func InitConfig() {
 	}()
 
 	conf.trialTrafficLimit = mustEnvInt("TRIAL_TRAFFIC_LIMIT")
+
+	conf.healthCheckPort = envIntDefault("HEALTH_CHECK_PORT", 8080)
 
 	conf.trialDays = mustEnvInt("TRIAL_DAYS")
 
