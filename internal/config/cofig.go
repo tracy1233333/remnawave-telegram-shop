@@ -306,7 +306,7 @@ func InitConfig() {
 	conf.tosURL = os.Getenv("TOS_URL")
 
 	conf.inboundUUIDs = func() map[uuid.UUID]uuid.UUID {
-		v := os.Getenv("INBOUND_UUID")
+		v := os.Getenv("INBOUND_UUIDS")
 		if v != "" {
 			uuids := strings.Split(v, ",")
 			var inboundsMap = make(map[uuid.UUID]uuid.UUID)
