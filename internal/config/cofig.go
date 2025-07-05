@@ -317,7 +317,7 @@ func InitConfig() {
 				}
 				inboundsMap[uuid] = uuid
 			}
-			slog.Info("Loaded inbound UUIDs", "uuids", conf.inboundUUIDs)
+			slog.Info("Loaded inbound UUIDs", "uuids", uuids)
 			return inboundsMap
 		} else {
 			slog.Info("No inbound UUIDs specified, all will be used")
