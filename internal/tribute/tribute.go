@@ -65,7 +65,7 @@ func (c *Client) WebHookHandler() http.Handler {
 			return
 		}
 
-		if wh.Name == "new_subscription" {
+		if wh.Name != "new_subscription" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
