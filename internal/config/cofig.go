@@ -35,9 +35,21 @@ type config struct {
 	miniApp                                                   string
 	enableAutoPayment                                         bool
 	healthCheckPort                                           int
+	tributeWebhookUrl, tributeAPIKey, tributePaymentUrl       string
 }
 
 var conf config
+
+func GetTributeWebHookUrl() string {
+	return conf.tributeWebhookUrl
+}
+func GetTributeAPIKey() string {
+	return conf.tributeAPIKey
+}
+
+func GetTributePaymentUrl() string {
+	return conf.tributePaymentUrl
+}
 
 func GetReferralDays() int {
 	return conf.referralDays
@@ -324,4 +336,10 @@ func InitConfig() {
 			return map[uuid.UUID]uuid.UUID{}
 		}
 	}()
+
+	conf.tributeWebhookUrl = os.Getenv("TRIBUTE_WEBHOOK_URL")
+	if conf.tributeWebhookUrl != "" {
+		conf.tributeAPIKey = mustEnv("TRIBUTE_API_KEY")
+		conf.tributePaymentUrl = mustEnv("TRIBUTE_PAYMENT_URL")
+	}
 }
