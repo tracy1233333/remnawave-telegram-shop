@@ -85,7 +85,7 @@ The application requires the following environment variables to be set:
 | `TRIAL_TRAFFIC_LIMIT`    | Maximum allowed traffic in gb for trial subscriptions                                                                                        |     
 | `TRIAL_DAYS`             | Number of days for trial subscriptions. if 0 = disabled.                                                                                     |
 | `INBOUND_UUIDS`          | Comma-separated list of inbound UUIDs to assign to users (e.g., "773db654-a8b2-413a-a50b-75c3536238fd,bc979bdd-f1fa-4d94-8a51-38a0f518a2a2") |
-| `TRIBUTE_WEBHOOK_URL`    | Path for webhook handler. Example: /example (https://www.uuidgenerator.net/version4)                                                        |
+| `TRIBUTE_WEBHOOK_URL`    | Path for webhook handler. Example: /example (https://www.uuidgenerator.net/version4)                                                         |
 | `TRIBUTE_API_KEY`        | Api key, which can be obtained via settings in Tribute app.                                                                                  |
 | `TRIBUTE_PAYMENT_URL`    | You payment url for Tribute. (Subscription telegram link)                                                                                    |
 
@@ -159,31 +159,31 @@ The bot supports subscription management via the Tribute service. When a user cl
 ### Step-by-step setup guide
 
 1. Getting started
-    * Create a channel;
-    * In the Tribute app, open "Channels and Groups" and add your channel;
-    * Create a new subscription;
-    * Obtain the subscription link (Subscription -> Links -> Telegram Link).
+  * Create a channel;
+  * In the Tribute app, open "Channels and Groups" and add your channel;
+  * Create a new subscription;
+  * Obtain the subscription link (Subscription -> Links -> Telegram Link).
 
 2. Configure environment variables in `.env`
-    * Set the webhook path (e.g., `/tribute/webhook`):
+  * Set the webhook path (e.g., `/tribute/webhook`):
 
 ```
 TRIBUTE_WEBHOOK_URL=/tribute/webhook
 ```
 
-    * Set the API key from your Tribute settings:
+  * Set the API key from your Tribute settings:
 
 ```
 TRIBUTE_API_KEY=your_tribute_api_key
 ```
 
-    * Paste the subscription link you got from Tribute:
+  * Paste the subscription link you got from Tribute:
 
 ```
 TRIBUTE_PAYMENT_URL=https://t.me/tribute/app?startapp=...
 ```
 
-    * Specify the port the app will use:
+  * Specify the port the app will use:
 
 ```
 HEALTH_CHECK_PORT=82251
