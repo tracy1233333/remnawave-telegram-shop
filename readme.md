@@ -165,29 +165,29 @@ The bot supports subscription management via the Tribute service. When a user cl
   * Obtain the subscription link (Subscription -> Links -> Telegram Link).
 
 2. Configure environment variables in `.env`
-  * Set the webhook path (e.g., `/tribute/webhook`):
+    * Set the webhook path (e.g., `/tribute/webhook`):
 
-```
-TRIBUTE_WEBHOOK_URL=/tribute/webhook
-```
+  ```
+  TRIBUTE_WEBHOOK_URL=/tribute/webhook
+  ```
 
-  * Set the API key from your Tribute settings:
+    * Set the API key from your Tribute settings:
 
-```
-TRIBUTE_API_KEY=your_tribute_api_key
-```
+  ```
+  TRIBUTE_API_KEY=your_tribute_api_key
+  ```
 
-  * Paste the subscription link you got from Tribute:
+    * Paste the subscription link you got from Tribute:
 
-```
-TRIBUTE_PAYMENT_URL=https://t.me/tribute/app?startapp=...
-```
+  ```
+  TRIBUTE_PAYMENT_URL=https://t.me/tribute/app?startapp=...
+  ```
 
-  * Specify the port the app will use:
+    * Specify the port the app will use:
 
-```
-HEALTH_CHECK_PORT=82251
-```
+  ```
+  HEALTH_CHECK_PORT=82251
+  ```
 
 3. Restart bot
 
