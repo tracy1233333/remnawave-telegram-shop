@@ -218,36 +218,36 @@ docker compose down && docker compose up -d
 
 <details>
 <summary>Traefik Configuration</summary>
-```yaml
-     http:
-       routers:
-         remnawave-telegram-shop:
-           rule: "Host(`bot.example.com`)"
-           entrypoints:
-             - http
-           middlewares:
-             - redirect-to-https
-           service: remnawave-telegram-shop
+    ```yaml
+    http:
+      routers:
+        remnawave-telegram-shop:
+          rule: "Host(`bot.example.com`)"
+          entrypoints:
+            - http
+          middlewares:
+            - redirect-to-https
+          service: remnawave-telegram-shop
 
-         remnawave-telegram-shop-secure:
-           rule: "Host(`bot.example.com`)"
-           entrypoints:
-             - https
-           tls:
-             certResolver: letsencrypt
-           service: remnawave-telegram-shop
+        remnawave-telegram-shop-secure:
+          rule: "Host(`bot.example.com`)"
+          entrypoints:
+            - https
+          tls:
+            certResolver: letsencrypt
+          service: remnawave-telegram-shop
 
-       middlewares:
-         redirect-to-https:
-           redirectScheme:
-             scheme: https
+      middlewares:
+        redirect-to-https:
+          redirectScheme:
+            scheme: https
 
-       services:
-         remnawave-telegram-shop:
-           loadBalancer:
-             servers:
-               - url: "http://bot:82251"
-```
+      services:
+        remnawave-telegram-shop:
+          loadBalancer:
+            servers:
+              - url: "http://bot:82251"
+    ```
 </details>
 
 ## Donations
