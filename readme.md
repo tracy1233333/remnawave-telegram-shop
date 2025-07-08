@@ -159,34 +159,41 @@ The bot supports subscription management via the Tribute service. When a user cl
 ### Step-by-step setup guide
 
 1. Getting started
-   - Create a channel;
-   - In the Tribute app, open "Channels and Groups" and add your channel;
-   - Create a new subscription;
-   - Obtain the subscription link (Subscription -> Links -> Telegram Link).
+    * Create a channel;
+    * In the Tribute app, open "Channels and Groups" and add your channel;
+    * Create a new subscription;
+    * Obtain the subscription link (Subscription -> Links -> Telegram Link).
 
 2. Configure environment variables in `.env`
-   - Set the webhook path (e.g., `/tribute/webhook`):
+    * Set the webhook path (e.g., `/tribute/webhook`):
 
- ```
- TRIBUTE_WEBHOOK_URL=/tribute/webhook
- ```
-   - Set the API key from your Tribute settings:
-     ```
-     TRIBUTE_API_KEY=your_tribute_api_key
-     ```
-   - Paste the subscription link you got from Tribute:
-     ```
-     TRIBUTE_PAYMENT_URL=https://t.me/tribute/app?startapp=...
-     ```
-   - Specify the port the app will use:
-     ```
-     HEALTH_CHECK_PORT=82251
-     ```
+```
+TRIBUTE_WEBHOOK_URL=/tribute/webhook
+```
+
+    * Set the API key from your Tribute settings:
+
+```
+TRIBUTE_API_KEY=your_tribute_api_key
+```
+
+    * Paste the subscription link you got from Tribute:
+
+```
+TRIBUTE_PAYMENT_URL=https://t.me/tribute/app?startapp=...
+```
+
+    * Specify the port the app will use:
+
+```
+HEALTH_CHECK_PORT=82251
+```
 
 3. Restart bot
-   ```bash
-   docker compose down && docker compose up -d
-   ```
+
+```bash
+docker compose down && docker compose up -d
+```
 
 ## How to change bot messages
 
@@ -196,15 +203,16 @@ Go to folder translations inside bot folder and change needed language.
 
 1. Pull the latest Docker image:
 
-   ```bash
-   docker compose pull
-   ```
+```bash
+docker compose pull
+```
 
 
 2. Restart the containers:
-   ```bash
-   docker compose down && docker compose up -d
-   ```
+
+```bash
+docker compose down && docker compose up -d
+```
 
 ## Reverse Proxy Configuration
 
