@@ -247,7 +247,7 @@ docker compose down && docker compose up -d
            loadBalancer:
              servers:
                - url: "http://bot:82251"
-     ```
+```
 </details>
 
 ## Donations
