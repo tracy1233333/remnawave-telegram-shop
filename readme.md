@@ -166,9 +166,10 @@ The bot supports subscription management via the Tribute service. When a user cl
 
 2. Configure environment variables in `.env`
    - Set the webhook path (e.g., `/tribute/webhook`):
-     ```
-     TRIBUTE_WEBHOOK_URL=/tribute/webhook
-     ```
+
+ ```
+ TRIBUTE_WEBHOOK_URL=/tribute/webhook
+ ```
    - Set the API key from your Tribute settings:
      ```
      TRIBUTE_API_KEY=your_tribute_api_key
