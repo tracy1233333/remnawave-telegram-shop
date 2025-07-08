@@ -216,38 +216,40 @@ docker compose down && docker compose up -d
 
 ## Reverse Proxy Configuration
 
+If you are not using ngrok from `docker-compose.yml`, you need to set up a reverse proxy to forward requests to the bot.
+
 <details>
 <summary>Traefik Configuration</summary>
-    ```yaml
-    http:
-      routers:
-        remnawave-telegram-shop:
-          rule: "Host(`bot.example.com`)"
-          entrypoints:
-            - http
-          middlewares:
-            - redirect-to-https
-          service: remnawave-telegram-shop
-
-        remnawave-telegram-shop-secure:
-          rule: "Host(`bot.example.com`)"
-          entrypoints:
-            - https
-          tls:
-            certResolver: letsencrypt
-          service: remnawave-telegram-shop
-
+```yaml
+http:
+  routers:
+    remnawave-telegram-shop:
+      rule: "Host(`bot.example.com`)"
+      entrypoints:
+        - http
       middlewares:
-        redirect-to-https:
-          redirectScheme:
-            scheme: https
+        - redirect-to-https
+      service: remnawave-telegram-shop
 
-      services:
-        remnawave-telegram-shop:
-          loadBalancer:
-            servers:
-              - url: "http://bot:82251"
-    ```
+    remnawave-telegram-shop-secure:
+      rule: "Host(`bot.example.com`)"
+      entrypoints:
+        - https
+      tls:
+        certResolver: letsencrypt
+      service: remnawave-telegram-shop
+
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+
+  services:
+    remnawave-telegram-shop:
+      loadBalancer:
+        servers:
+          - url: "http://bot:82251"
+```
 </details>
 
 ## Donations
