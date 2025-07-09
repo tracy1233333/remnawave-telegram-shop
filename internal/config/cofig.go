@@ -37,6 +37,7 @@ type config struct {
 	healthCheckPort                                           int
 	tributeWebhookUrl, tributeAPIKey, tributePaymentUrl       string
 	isWebAppLinkEnabled                                       bool
+	xApiKey                                                   string
 }
 
 var conf config
@@ -204,6 +205,10 @@ func IsWepAppLinkEnabled() bool {
 	return conf.isWebAppLinkEnabled
 }
 
+func GetXApiKey() string {
+	return conf.xApiKey
+}
+
 const bytesInGigabyte = 1073741824
 
 func mustEnv(key string) string {
@@ -252,6 +257,8 @@ func InitConfig() {
 	}
 
 	conf.telegramToken = mustEnv("TELEGRAM_TOKEN")
+
+	conf.xApiKey = os.Getenv("X_API_KEY")
 
 	conf.isWebAppLinkEnabled = func() bool {
 		isWebAppLinkEnabled := os.Getenv("IS_WEB_APP_LINK") == "true"
