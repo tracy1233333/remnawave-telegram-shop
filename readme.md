@@ -220,6 +220,7 @@ If you are not using ngrok from `docker-compose.yml`, you need to set up a rever
 
 <details>
 <summary>Traefik Configuration</summary>
+  
 ```yaml
 http:
   routers:
@@ -250,6 +251,7 @@ http:
         servers:
           - url: "http://bot:82251"
 ```
+
 </details>
 
 ## Donations
