@@ -36,6 +36,7 @@ type config struct {
 	enableAutoPayment                                         bool
 	healthCheckPort                                           int
 	tributeWebhookUrl, tributeAPIKey, tributePaymentUrl       string
+	isWebAppLinkEnabled                                       bool
 }
 
 var conf config
@@ -199,6 +200,10 @@ func GetHealthCheckPort() int {
 	return conf.healthCheckPort
 }
 
+func IsWepAppLinkEnabled() bool {
+	return conf.isWebAppLinkEnabled
+}
+
 const bytesInGigabyte = 1073741824
 
 func mustEnv(key string) string {
@@ -247,6 +252,11 @@ func InitConfig() {
 	}
 
 	conf.telegramToken = mustEnv("TELEGRAM_TOKEN")
+
+	conf.isWebAppLinkEnabled = func() bool {
+		isWebAppLinkEnabled := os.Getenv("IS_WEB_APP_LINK") == "true"
+		return isWebAppLinkEnabled
+	}()
 
 	conf.miniApp = func() string {
 		v := os.Getenv("MINI_APP_URL")
