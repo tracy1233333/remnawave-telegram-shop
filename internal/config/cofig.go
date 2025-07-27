@@ -38,6 +38,7 @@ type config struct {
 	tributeWebhookUrl, tributeAPIKey, tributePaymentUrl       string
 	isWebAppLinkEnabled                                       bool
 	xApiKey                                                   string
+	daysInMonth                                               int
 }
 
 var conf config
@@ -110,6 +111,10 @@ func Price6() int {
 
 func Price12() int {
 	return conf.price12
+}
+
+func DaysInMonth() int {
+	return conf.daysInMonth
 }
 
 func Price(month int) int {
@@ -273,6 +278,8 @@ func InitConfig() {
 			return ""
 		}
 	}()
+
+	conf.daysInMonth = envIntDefault("DAYS_IN_MONTH", 30)
 
 	conf.trialTrafficLimit = mustEnvInt("TRIAL_TRAFFIC_LIMIT")
 
