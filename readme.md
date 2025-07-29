@@ -38,9 +38,9 @@ purchase and manage subscriptions through Telegram with multiple payment system 
 ## Version Support
 
 | Remnawave | Bot   |
-|-----------|-------|
-| 1.6       | 2.3.6 |
-| 2.0.0     | 3.0.0 |
+|-------|-------|
+| 1.6   | 2.3.6 |
+| 2     | 3.0.0 |
 
 ## API
 
