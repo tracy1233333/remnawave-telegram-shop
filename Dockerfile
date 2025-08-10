@@ -44,4 +44,10 @@ COPY --from=builder /app/translations /translations
 
 USER 1000
 
+<<<<<<< HEAD
 CMD ["/app/app"]
+=======
+ENV DISABLE_ENV_FILE=true
+
+CMD ["/app/app"]
+>>>>>>> joly/main
